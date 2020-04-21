@@ -1,0 +1,11 @@
+name: ThermalExtremes
+version: 0.1
+author: James Pollard
+main: com.github.usevalue.thermalextremes.ThermalExtremes
+api-version: 1.15
+
+commands:
+  thermal:
+    description: The main ThermalExtremes command
+    usage: Unrecognised ThermalExtremes command.  Try /thermal or /thermal help
+    aliases: [thermalextremes]
