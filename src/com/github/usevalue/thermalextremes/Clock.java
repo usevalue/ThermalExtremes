@@ -21,7 +21,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
         clock=this;
         random = new Random();
         duration = 0;
-        runTaskTimer(plugin, plugin.configuration.interval, 10);
+        runTaskTimer(plugin, 5, plugin.configuration.interval);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
         switch(temp) {
             case NORMAL:
                 chance = duration/plugin.configuration.stability;
-                if(plugin.configuration.debug) plugin.getLogger().log(Level.INFO, "Current chance of thermal event is "+chance+"%.  The dice roll is "+diceRoll);
+                ThermalExtremes.debug("Current chance of thermal event is "+chance+"%.  The dice roll is "+diceRoll);
                 if(chance>diceRoll) {
                     duration=0;
                     boolean coinFlip = (random.nextDouble()>=0.5);
@@ -45,7 +45,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
                 break;
             default:
                 chance = duration/plugin.configuration.severity;
-                if(plugin.configuration.debug) plugin.getLogger().log(Level.INFO, "Temperatures are unusually "+temp+".  Chance of normalisation is "+chance+".  The dice roll is "+diceRoll);
+                ThermalExtremes.debug("Temperatures are unusually "+temp+".  Chance of normalisation is "+chance+".  The dice roll is "+diceRoll);
                 if(chance>diceRoll) {
                     duration=0;
                     normaliseTemps();
@@ -77,18 +77,21 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
     public boolean beginHeatwave() {
         temp = HOT;
         plugin.getLogger().log(Level.INFO, "The heat is becoming unbearable!");
+        plugin.getServer().broadcastMessage("An unbearable heatwave has begun.");
         return true;
     }
 
     public boolean beginColdSnap() {
         temp = Temperature.COLD;
         plugin.getLogger().log(Level.INFO, "Temperatures are dropping dramatically.");
+        plugin.getServer().broadcastMessage("Temperatures have begun dropping dramatically.");
         return true;
     }
 
     public boolean normaliseTemps() {
         temp = Temperature.NORMAL;
         plugin.getLogger().log(Level.INFO, "Temperatures are returning to normal.");
+        plugin.getServer().broadcastMessage("Temperatures are starting to return to normal levels.");
         return true;
     }
 

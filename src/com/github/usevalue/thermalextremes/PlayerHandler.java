@@ -1,5 +1,7 @@
 package com.github.usevalue.thermalextremes;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,17 +11,13 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import java.util.HashMap;
 import java.util.logging.Level;
 
-import static com.github.usevalue.thermalextremes.Temperature.*;
 
 public class PlayerHandler implements Listener {
 
     private HashMap<Player,ThermalPlayer> playerMap;
-    private int chattiness;
-    private int chatCounter = 0;
 
     public PlayerHandler() {
         playerMap = new HashMap<Player,ThermalPlayer>();
-        chattiness = ThermalExtremes.configuration.playerhandler_chattiness;
     }
 
     @EventHandler
@@ -39,7 +37,7 @@ public class PlayerHandler implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         playerMap.remove(player);
-        ThermalExtremes.plugin.getLogger().log(Level.INFO, "Player "+player.getDisplayName()+" removed from Thermal tracking.");
+        ThermalExtremes.plugin.getLogger().log(Level.INFO, "Player "+player.getDisplayName()+" removed from tracking.");
     }
 
     public HashMap<Player,ThermalPlayer> getThermalPlayers() {
@@ -58,48 +56,50 @@ public class PlayerHandler implements Listener {
         ThermalPlayer t = getThermalPlayer(p);
         if(t==null) return;
 
-        //  Determine environmental exposure
+        //  Check block environment
+        Location l = p.getLocation();
+        boolean shaded = p.getWorld().getHighestBlockAt(l).getY()>l.getY();
+        boolean watery = l.getBlock().getType().equals(Material.WATER);
+        if(watery) t.wetness=10;
+        double blockTemp = l.getBlock().getTemperature();  // Minecraft-provided stat combining information on altitude and biome
+        double lightFromBlocks = l.getBlock().getLightFromBlocks();
+        double lightFromSky = l.getBlock().getLightFromSky();
+        double lightLevel = l.getBlock().getLightLevel();
+        ThermalExtremes.plugin.debug("Temperature "+blockTemp+", lightfromblocks "+lightFromBlocks+", lightfromsky "+lightFromSky+", lightlevel "+lightLevel);
+
+        //  Set level of exposure
+        double degreeOfExposure=0;
         switch(ThermalExtremes.clock.checkTemp()) {
             case NORMAL:
-                t.exposure=0;
+                t.isExposed=false;
                 break;
             case HOT:
+                t.isExposed=true;
+                degreeOfExposure=1;
                 break;
             case COLD:
-                break;
+                t.isExposed=true;
+                degreeOfExposure=-1;
         }
 
-        // Bodily exposure
+        // Update temperature
+        if(t.isExposed) t.expose(degreeOfExposure);
+        else t.regulate();
 
-        switch(ThermalExtremes.clock.checkTemp()) {
-            case NORMAL:
-                break;
-            case HOT:
-                break;
-            case COLD:
-                break;
+        // Update bodily condition?  If so, notify player.
+        if(t.updateBodilyCondition()) {
+            if(t.isExposed) {
+                if(ThermalExtremes.clock.checkTemp().equals(Temperature.COLD)) {
+                    p.sendMessage("You are dangerously exposed to the cold!  Your condition is "+t.condition+"!  Go inside and sit by the fire!");
+                }
+                else p.sendMessage("You've been over-exposed to the heat!  Your condition is "+t.condition+"!  Find some shade or go for a swim to cool down!");
+            }
+            else {
+                p.sendMessage("You're recoving somewhat.  Your condition is "+t.condition+".");
+            }
         }
 
-
-
-        // Regulate or expose
-        double tempshift = 0;
-        
-        if(t.exposure>0) {
-
-        }
-        else {
-
-        }
-
-        // Harm the player
-
-        // Notify player
-
-        p.sendMessage("Hey you!");
-
-
-
+        // Run effects of bodily condition
 
     }
 

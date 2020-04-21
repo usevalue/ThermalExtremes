@@ -31,5 +31,8 @@ public class ThermalExtremes extends JavaPlugin {
 
     }
 
+    public static void debug(String m) {
+        if(configuration.debug) logger.log(Level.INFO, m);
+    }
 
 }
