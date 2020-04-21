@@ -1,0 +1,20 @@
+debug: false
+
+# Clock settings
+clock_interval: 100
+
+# Climate model settings
+risk: 20
+stability: 50
+severity: 30
+block_lightLevel_warmed: 10;
+block_lightLevel_heated: 14;
+
+# Body temperature settings
+severe_hypothermia_degrees_C: 28
+hypothermia_degrees_C: 35
+comfort_min_C: 37
+comfort_max_C: 37.5
+hyperthermia_degrees_C: 38.3
+severe_hyperthermia_degrees_C: 40
+
