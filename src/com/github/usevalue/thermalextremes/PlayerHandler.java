@@ -67,19 +67,18 @@ public class PlayerHandler implements Listener {
         double lightLevel = l.getBlock().getLightLevel();
         ThermalExtremes.plugin.debug("Temperature "+blockTemp+", lightfromblocks "+lightFromBlocks+", lightfromsky "+lightFromSky+", lightlevel "+lightLevel);
 
-        //  Set level of exposure
+        //  Set measure degree of exposure
         double degreeOfExposure=0;
         switch(ThermalExtremes.clock.checkTemp()) {
             case NORMAL:
-                t.isExposed=false;
                 break;
             case HOT:
-                t.isExposed=true;
                 degreeOfExposure=1;
+                if(shaded) degreeOfExposure/=2;
+                if(watery) degreeOfExposure/=2;
                 break;
             case COLD:
-                t.isExposed=true;
-                degreeOfExposure=-1;
+                degreeOfExposure=1;
         }
 
         // Update temperature

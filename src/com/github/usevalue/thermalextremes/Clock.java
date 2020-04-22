@@ -33,7 +33,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
         switch(temp) {
             case NORMAL:
                 chance = duration/plugin.configuration.stability;
-                ThermalExtremes.debug("Current chance of thermal event is "+chance+"%.  The dice roll is "+diceRoll);
+                ThermalExtremes.debug("Global temperatures are normal.  Current chance of thermal event is "+chance+"%.  The dice roll is "+diceRoll);
                 if(chance>diceRoll) {
                     duration=0;
                     boolean coinFlip = (random.nextDouble()>=0.5);
@@ -45,7 +45,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
                 break;
             default:
                 chance = duration/plugin.configuration.severity;
-                ThermalExtremes.debug("Temperatures are unusually "+temp+".  Chance of normalisation is "+chance+".  The dice roll is "+diceRoll);
+                ThermalExtremes.debug("Global temperatures are "+temp+".  Current chance of normalisation is "+chance+"%.  The dice roll is "+diceRoll);
                 if(chance>diceRoll) {
                     duration=0;
                     normaliseTemps();
@@ -53,20 +53,6 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
                 break;
         }
 
-        // Report temp to console in debug mode
-        if(plugin.configuration.debug) {
-            switch (temp) {
-                case HOT:
-                    plugin.getLogger().log(Level.INFO, "It's very warm.");
-                    break;
-                case COLD:
-                    plugin.getLogger().log(Level.INFO, "It's very cold.");
-                    break;
-                case NORMAL:
-                    plugin.getLogger().log(Level.INFO, "The temperature is agreeable.");
-                    break;
-            }
-        }
         // Check player thermal situations
         for(Player p : plugin.getServer().getOnlinePlayers()) {
             plugin.playerHandler.updatePlayer(p);
