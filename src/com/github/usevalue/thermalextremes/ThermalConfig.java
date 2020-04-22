@@ -3,7 +3,7 @@ import org.bukkit.configuration.Configuration;
 public class ThermalConfig {
 
     public static long interval;
-    public static double risk;
+    public static boolean random_weather;
     public static double stability;
     public static double severity;
     public static boolean debug;
@@ -19,11 +19,13 @@ public class ThermalConfig {
     public static double block_lightLevel_warmed;
     public static double block_lightLevel_heated;
 
+
+
     public ThermalConfig() {
         ThermalExtremes.plugin.saveDefaultConfig();
         Configuration c = ThermalExtremes.plugin.getConfig();
+        random_weather = c.getBoolean("random_weather");
         interval = c.getLong("clock_interval");
-        risk = c.getDouble("risk");
         stability = c.getDouble("stability");
         severity = c.getDouble("severity");
         debug = c.getBoolean("debug");

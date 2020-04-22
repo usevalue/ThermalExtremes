@@ -6,8 +6,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.logging.Level;
-
 public class ThermalCommands implements CommandExecutor {
 
     public ThermalCommands() {
@@ -31,20 +29,40 @@ public class ThermalCommands implements CommandExecutor {
             }
             return true;
         }
-        else {
-            if(args[0].toLowerCase().equals("help")) {
-                sender.sendMessage("Help!");
+
+        if(args[0].toLowerCase().equals("help")) {
+            sender.sendMessage("Help!");
+            return true;
+        }
+
+        if(args[0].toLowerCase().equals("list")) {
+            sender.sendMessage("&BCurrently tracking the following players:");
+            for(Player p : ThermalExtremes.playerHandler.getThermalPlayers().keySet()) {
+                sender.sendMessage(p.getDisplayName()+" has a body temperature of "+ThermalExtremes.playerHandler.getThermalPlayer(p).getTemp()+"°C.");
+            }
+            return true;
+        }
+
+        if(args[0].toLowerCase().equals("toggle")) {
+            if(args.length==1) {
+                sender.sendMessage("You can toggle [random] weather, or console-side [debug] mode.");
                 return true;
             }
-            if(args[0].toLowerCase().equals("list")) {
-                sender.sendMessage("Currently tracking the following players:");
-                for(Player p : ThermalExtremes.playerHandler.getThermalPlayers().keySet()) {
-                    sender.sendMessage(p+" has a body temperature of "+ThermalExtremes.playerHandler.getThermalPlayer(p).getTemp()+"°C.");
-                }
-                return true;
+            switch(args[1].toLowerCase()) {
+                case "random":
+                    ThermalExtremes.clock.randomWeather = !ThermalExtremes.clock.randomWeather;
+                    String s = "disabled";
+                    if (ThermalExtremes.clock.randomWeather) s = "enabled";
+                    sender.sendMessage("Random weather changes are now " + s + ".");
+                    return true;
+                case "debug":
+                    ThermalExtremes.debugMode = !ThermalExtremes.debugMode;
+                    sender.sendMessage("Toggled console debug mode.");
+                    return true;
+                default:
+                    sender.sendMessage("You can only toggle 'random' and 'debug' I'm afraid.");
+                    return true;
             }
-            ThermalExtremes.logger.log(Level.INFO,args[0]);
-            //switch(args[0]):
         }
         return false;
     }

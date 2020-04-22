@@ -13,6 +13,8 @@ public class ThermalExtremes extends JavaPlugin {
     public static PlayerHandler playerHandler;
     public static ThermalCommands commands;
     public static Clock clock;
+    public static boolean debugMode;
+
 
     @Override
     public void onEnable() {
@@ -24,6 +26,7 @@ public class ThermalExtremes extends JavaPlugin {
         commands = new ThermalCommands();
         this.getCommand("thermal").setExecutor(commands);
         logger.log(Level.INFO, "[ThermalExtremes] Plugin enabled.  Drink plenty of water.");
+        debugMode = configuration.debug;
     }
 
     @Override
@@ -32,7 +35,8 @@ public class ThermalExtremes extends JavaPlugin {
     }
 
     public static void debug(String m) {
-        if(configuration.debug) logger.log(Level.INFO, m);
+        if(debugMode) logger.log(Level.INFO, m);
     }
+
 
 }

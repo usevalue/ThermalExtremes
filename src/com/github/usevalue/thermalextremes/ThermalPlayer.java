@@ -75,6 +75,8 @@ public class ThermalPlayer {
 
     public boolean expose(double degree) {
         personalTemp_degrees_C+=degree;
+        if(personalTemp_degrees_C>50) personalTemp_degrees_C = 50;
+        if(personalTemp_degrees_C<10) personalTemp_degrees_C = 10;
         return true;
     }
 

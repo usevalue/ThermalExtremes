@@ -61,31 +61,39 @@ public class PlayerHandler implements Listener {
         boolean shaded = p.getWorld().getHighestBlockAt(l).getY()>l.getY();
         boolean watery = l.getBlock().getType().equals(Material.WATER);
         if(watery) t.wetness=10;
+        boolean warmed = l.getBlock().getLightFromBlocks()>=ThermalExtremes.configuration.block_lightLevel_warmed;
+        boolean heated = l.getBlock().getLightFromBlocks()>=ThermalExtremes.configuration.block_lightLevel_heated;
+
+
         double blockTemp = l.getBlock().getTemperature();  // Minecraft-provided stat combining information on altitude and biome
         double lightFromBlocks = l.getBlock().getLightFromBlocks();
         double lightFromSky = l.getBlock().getLightFromSky();
-        double lightLevel = l.getBlock().getLightLevel();
-        ThermalExtremes.plugin.debug("Temperature "+blockTemp+", lightfromblocks "+lightFromBlocks+", lightfromsky "+lightFromSky+", lightlevel "+lightLevel);
-
         //  Set measure degree of exposure
         double degreeOfExposure=0;
         switch(ThermalExtremes.clock.checkTemp()) {
             case NORMAL:
                 break;
             case HOT:
-                degreeOfExposure=1;
-                if(shaded) degreeOfExposure/=2;
-                if(watery) degreeOfExposure/=2;
+                degreeOfExposure=lightFromSky+lightFromBlocks;
+                t.isExposed=!(shaded||watery);
                 break;
             case COLD:
-                degreeOfExposure=1;
+                degreeOfExposure=-1;
+                if(t.wetness>0) degreeOfExposure*=t.wetness;
+                degreeOfExposure+=lightFromBlocks;
+                t.isExposed = degreeOfExposure<0;
         }
+        ThermalExtremes.plugin.debug("Degree of exposure for "+p.getDisplayName()+" is "+degreeOfExposure+".  BlockTemp "+blockTemp+", lightfromblocks "+lightFromBlocks+", lightfromsky "+lightFromSky+".");
+
 
         // Update temperature
-        if(t.isExposed) t.expose(degreeOfExposure);
+        if(t.isExposed) t.expose(degreeOfExposure/100);
         else t.regulate();
 
         // Update bodily condition?  If so, notify player.
+        if(!watery&&heated) t.wetness--;
+        if(!watery&&warmed) t.wetness--;
+
         if(t.updateBodilyCondition()) {
             if(t.isExposed) {
                 if(ThermalExtremes.clock.checkTemp().equals(Temperature.COLD)) {
