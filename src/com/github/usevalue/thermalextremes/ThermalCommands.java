@@ -18,16 +18,34 @@ public class ThermalCommands implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
         if(args.length==0) {
-            if(sender instanceof ConsoleCommandSender) {
-                sender.sendMessage("Possible ThermalExtremes console commands:");
-                sender.sendMessage("status, list, heatwave, coldsnap, normalise.  Type 'thermal help [command]' for a description of what it does.");
+            sender.sendMessage("Possible ThermalExtremes commands:");
+            sender.sendMessage("status, list, heatwave, coldsnap, normalise.  Type 'thermal help [command]' for a description of what it does.");
+            return true;
+        }
+
+        if(args[0].toLowerCase().equals("status")) {
+            Player p;
+            if(args.length==1) {
+                if(sender instanceof ConsoleCommandSender) {
+                    sender.sendMessage("Please specify a player from console, i.e. thermal status [name]");
+                    return true;
+                }
+                else p = ThermalExtremes.plugin.getServer().getPlayer(sender.getName());
             }
             else {
-                Player p = ThermalExtremes.plugin.getServer().getPlayer(sender.getName());
-                ThermalPlayer t = ThermalExtremes.playerHandler.getThermalPlayer(p);
-                sender.sendMessage(ChatColor.AQUA+"Core body temperature: "+ChatColor.WHITE+Math.floor(t.getTemp()*100)/100+"°C");
-                sender.sendMessage(ChatColor.AQUA+"World temperatures: "+ChatColor.WHITE+ThermalExtremes.clock.checkTemp());
+                p = ThermalExtremes.plugin.getServer().getPlayer(args[1]);
+                if(p==null) {
+                    sender.sendMessage("Player "+args[1]+" not found.");
+                    return true;
+                }
             }
+            ThermalPlayer t = ThermalExtremes.playerHandler.getThermalPlayer(p);
+            sender.sendMessage(ChatColor.AQUA + "PLAYER STATS:");
+            sender.sendMessage(ChatColor.AQUA + "Core body temperature: " + ChatColor.WHITE + Math.floor(t.getTemp() * 100) / 100 + "°C");
+            sender.sendMessage(ChatColor.AQUA+"Wetness: "+ChatColor.WHITE+t.wetness);
+            sender.sendMessage(ChatColor.AQUA+"Hydration: "+ChatColor.WHITE+t.hydration);
+            sender.sendMessage(ChatColor.AQUA + "WORLD STATS:");
+            sender.sendMessage(ChatColor.AQUA + "World temperatures are " + ThermalExtremes.clock.checkTemp());
             return true;
         }
 
