@@ -7,7 +7,7 @@ public class ThermalConfig {
     public static double stability;
     public static boolean debug;
 
-
+    public static double base_bodily_regulation;
     public static double comfort_max_C;
     public static double comfort_min_C;
     public static double hypothermia_degrees_C;
@@ -35,6 +35,7 @@ public class ThermalConfig {
         interval = c.getLong("clock_interval");
         stability = c.getDouble("stability");
         debug = c.getBoolean("debug");
+        base_bodily_regulation = c.getDouble("base_bodily_regulation");
         comfort_max_C = c.getDouble("comfort_max_C");
         comfort_min_C = c.getDouble("comfort_min_C");
         hypothermia_degrees_C = c.getDouble("hypothermia_degrees_C");

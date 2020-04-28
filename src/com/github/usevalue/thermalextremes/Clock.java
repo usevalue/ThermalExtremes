@@ -68,7 +68,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
 
         // Check player thermal situations
         for(Player p : plugin.getServer().getOnlinePlayers()) {
-            plugin.playerHandler.updatePlayer(p);
+            plugin.playerHandler.updatePlayer(p, temp);
         }
 
     }

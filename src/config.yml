@@ -9,7 +9,8 @@ stability: 40
 block_lightLevel_warmed: 10
 block_lightLevel_heated: 14
 
-# Body temperature settings
+# Player settings
+base_bodily_regulation: 1
 severe_hypothermia_degrees_C: 28
 hypothermia_degrees_C: 35
 comfort_min_C: 37

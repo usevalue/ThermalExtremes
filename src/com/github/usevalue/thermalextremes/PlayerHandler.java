@@ -1,5 +1,6 @@
 package com.github.usevalue.thermalextremes;
 
+import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -53,62 +54,91 @@ public class PlayerHandler implements Listener {
         else return t;
     }
 
-    public void updatePlayer(Player p) {
+    // updatePlayer is called for each player each plugin tick.
+    // First, it verifies the player and their record.
+    // Second, it update's the player's hydration levels.
+    // Third, it calculates the player's exposure to thermal extremes.
+    // Fourth, it adjusts the player's temperature based on exposure versus their body's capacity to regulate.
+    // Fifth, it update's the player's bodily condition and returns the result to the clock.
 
-        // Check that they exist
+    public BodilyCondition updatePlayer(Player p, Temperature temp) {
+
+        // 1.  Check that they exist
         ThermalPlayer t = getThermalPlayer(p);
-        if (t == null) return;
-        if (!ThermalExtremes.clock.checkTemp().equals(NORMAL)) {
-            //  Check block environment
-            Location l = p.getLocation();
-            boolean sunlit = p.getWorld().getHighestBlockAt(l).getY() <= l.getY();
-            boolean warmed = l.getBlock().getLightFromBlocks() >= ThermalExtremes.configuration.lightLevel_warmed;
-            boolean heated = l.getBlock().getLightFromBlocks() >= ThermalExtremes.configuration.block_lightLevel_heated;
-            boolean watery = l.getBlock().getType().equals(Material.WATER);
-            if (watery) t.wetness = 30;
-            double blockTemp = l.getBlock().getTemperature();  // Minecraft-provided stat combining information on altitude and biome
 
-            //  Set measure degree of exposure
-            double degreeOfExposure = 0;
+        if (t == null) return null;
+        // 2.  Update hydration
+        // Water exposure
+        boolean watery = p.getLocation().getBlock().equals(Material.WATER);
+        if (watery) {
+            t.wetness = 200;
+        }
+        else if(t.wetness>0) t.wetness -= p.getLocation().getBlock().getLightLevel();
+        // Dehydration
+        boolean hydrated = t.hydration > 0;
 
-            switch (ThermalExtremes.clock.checkTemp()) {
+        // 3.  Calculate exposure
+        double exposure = 0;
+        if (temp.equals(NORMAL)) {
+            if(t.condition.ordinalTemp<4) { // Represents fine weather, but player is nevertheless hypothermic.
+                exposure += t.wetness/10;
+                if(p.getLocation().getBlock().getLightLevel()<7) exposure++;  // Harder to warm up in the shade
+            }
+            else if(t.condition.ordinalTemp>4) {  // Fine weather, but hyperthermic
+                exposure -= t.wetness/10;
+                if(p.getLocation().getBlock().getLightLevel()>6) exposure++;  // Harder to cool down in the sun.
+                if(!hydrated) exposure*=2;
+                if(watery) exposure/=2;
+            }
+        }
+        else switch (temp) {
+            case HOT:
+                if (watery) break;
+                exposure++;
+                exposure += p.getLocation().getBlock().getLightFromSky();
+                exposure -= t.wetness/10;
+                break;
+            case COLD:
+                if (watery) {
+                    exposure = 10;
+                    break;
+                }
+                else exposure = 1;
+                exposure*=t.wetness/10;
+                exposure-=p.getLocation().getBlock().getLightFromBlocks();
+            default:
+                break;
+        }
+
+        ThermalExtremes.debug("Degree of exposure for " + p.getDisplayName() + " is " + exposure + ".");
+
+
+        //  4.  Adjust temperature based on exposure
+
+
+
+        if(exposure>0) {
+            double change=0;
+            switch(temp) {
+                case NORMAL:
+                    if(t.condition.ordinalTemp<4) change=exposure*ThermalConfig.cold_temp_per_tick*-1;
+                    else change=exposure*ThermalConfig.hot_temp_per_tick;
+                    break;
                 case HOT:
-                    if (watery) {
-                        degreeOfExposure = 0;
-                        break;
-                    }
-                    degreeOfExposure = 1;
-                    if (sunlit) degreeOfExposure *= 2;
-                    if (warmed) degreeOfExposure *= 1.1;
-                    if (heated) degreeOfExposure *= 1.5;
-                    if (t.wetness > 0) degreeOfExposure *= (1 - t.wetness / 100);
+                    change=exposure*ThermalConfig.hot_temp_per_tick;
                     break;
                 case COLD:
-                    if (watery) {
-                        degreeOfExposure = 10;
-                        break;
-                    } else degreeOfExposure = 1;
-                    if (t.wetness > 0) degreeOfExposure *= 1 + (t.wetness / 10);
-                    if (heated) {
-                        degreeOfExposure *= 0.5;
-                        t.wetness-=2;
-                    }
-                    t.isExposed = degreeOfExposure < 0;
-                default:
-                    break;
+                    change=exposure*ThermalConfig.cold_temp_per_tick;
             }
-            t.isExposed = degreeOfExposure > 1;
-
-            ThermalExtremes.plugin.debug("Degree of exposure for " + p.getDisplayName() + " is " + degreeOfExposure + ".  BlockTemp " + blockTemp + ", sunlit: " + sunlit);
-
-            // Update temperature
-            if (t.isExposed) t.expose(degreeOfExposure);
-            else t.regulate(0.1/degreeOfExposure);
+            t.expose(change);
         }
 
-        if(t.updateBodilyCondition()) {
-            if(t.isExposed) p.sendMessage(t.condition.color.toString()+"You are exposed to the "+t.condition.effectName+".  You are "+t.condition.descriptor+" now"+t.condition.punctuation);
-        }
+
+        t.regulate(ThermalConfig.base_bodily_regulation);
+
+        //  5.  Update and return bodily condition.
+        return t.updateBodilyCondition();
+
     }
 
 }

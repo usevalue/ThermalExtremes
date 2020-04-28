@@ -1,11 +1,11 @@
 package com.github.usevalue.thermalextremes.thermalcreature;
 
 import com.github.usevalue.thermalextremes.ThermalConfig;
-import com.github.usevalue.thermalextremes.ThermalExtremes;
 
 public class ThermalPlayer extends ThermalCreature {
     private double personalTemp_degrees_C;
     public int wetness = 0;
+    public int hydration = 100;
     public BodilyCondition condition;
     public boolean isExposed=false;
     public static final double idealTemp = (ThermalConfig.comfort_min_C)/2;
@@ -27,7 +27,7 @@ public class ThermalPlayer extends ThermalCreature {
         return true;
     }
 
-    public boolean updateBodilyCondition() {
+    public BodilyCondition updateBodilyCondition() {
         BodilyCondition target;
         if(personalTemp_degrees_C>=ThermalConfig.severe_hyperthermia_degrees_C) target = BodilyCondition.SEVERE_HYPERTHERMIA;
         else if(personalTemp_degrees_C>= ThermalConfig.hyperthermia_degrees_C) target = BodilyCondition.HYPERTHERMIA;
@@ -36,14 +36,8 @@ public class ThermalPlayer extends ThermalCreature {
         else if(personalTemp_degrees_C>ThermalConfig.hypothermia_degrees_C) target = BodilyCondition.UNCOMFORTABLY_COLD;
         else if(personalTemp_degrees_C>=ThermalConfig.severe_hypothermia_degrees_C) target = BodilyCondition.HYPOTHERMIA;
         else target=BodilyCondition.SEVERE_HYPOTHERMIA;
-
-        if(condition.equals(target)) {
-            return false;
-        }
-        else {
-            condition = target;
-            return true;
-        }
+        condition=target;
+        return target;
     }
 
     public boolean regulate(double d) {  // Returns true if the creature is at its ideal temperature.
