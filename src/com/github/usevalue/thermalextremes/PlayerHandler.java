@@ -2,7 +2,6 @@ package com.github.usevalue.thermalextremes;
 
 import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

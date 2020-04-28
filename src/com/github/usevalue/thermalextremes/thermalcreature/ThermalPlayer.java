@@ -8,7 +8,7 @@ public class ThermalPlayer extends ThermalCreature {
     public int hydration = 100;
     public BodilyCondition condition;
     public boolean isExposed=false;
-    public static final double idealTemp = (ThermalConfig.comfort_min_C)/2;
+    public static final double idealTemp = (ThermalConfig.comfort_min_C+ThermalConfig.comfort_max_C)/2;
 
     // private list of conditions
 
