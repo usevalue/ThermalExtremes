@@ -3,10 +3,9 @@ debug: false
 # Clock settings
 clock_interval: 100
 
-# Climate model settings
+# World climate settings
 random_weather: true # Can be changed during runtime
-stability: 50
-severity: 30
+stability: 40
 block_lightLevel_warmed: 10
 block_lightLevel_heated: 14
 
@@ -18,6 +17,14 @@ comfort_max_C: 37.5
 hyperthermia_degrees_C: 38.3
 severe_hyperthermia_degrees_C: 40
 
-# Exposure settings
-base_degree_change_when_exposed: 0.1
-
+# Extremes settings
+heatwave:
+  base_degree_change_when_exposed: 0.1
+  severity: 100
+  minimum_duration: 100
+  maximum_duration: 10000
+coldsnap:
+  base_degree_change_when_exposed: 0.1
+  severity: 50
+  minimum_duration: 100
+  maximum_duration: 10000

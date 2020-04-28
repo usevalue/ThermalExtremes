@@ -7,8 +7,8 @@ import java.util.logging.Logger;
 
 public class ThermalExtremes extends JavaPlugin {
 
-    public static Logger logger = Bukkit.getLogger();
     public static ThermalExtremes plugin;
+    public static Logger logger = Bukkit.getLogger();
     public static ThermalConfig configuration;
     public static PlayerHandler playerHandler;
     public static ThermalCommands commands;
