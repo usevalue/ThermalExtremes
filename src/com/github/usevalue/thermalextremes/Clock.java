@@ -1,11 +1,13 @@
 package com.github.usevalue.thermalextremes;
 
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+
 import java.util.Random;
 
 import static com.github.usevalue.thermalextremes.Temperature.*;
 
-public class Clock extends org.bukkit.scheduler.BukkitRunnable {
+public class Clock extends BukkitRunnable {
 
     public static Clock clock;
     private Random random;
@@ -18,13 +20,13 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
         clock=this;
         random = new Random();
         duration = 0;
-        randomWeather = ThermalExtremes.configuration.random_weather;
-        runTaskTimer(plugin, 5, plugin.configuration.interval);
+        randomWeather = ThermalConfig.random_weather;
+        runTaskTimer(plugin, 5, ThermalConfig.interval);
     }
 
     @Override
     public void run() {
-        duration+=plugin.configuration.interval;
+        duration+=ThermalConfig.interval;
 
         // Should the temperature change?
         if(randomWeather) {
@@ -68,7 +70,7 @@ public class Clock extends org.bukkit.scheduler.BukkitRunnable {
 
         // Check player thermal situations
         for(Player p : plugin.getServer().getOnlinePlayers()) {
-            plugin.playerHandler.updatePlayer(p, temp);
+            ThermalExtremes.playerHandler.updatePlayer(p, temp);
         }
 
     }
