@@ -2,17 +2,20 @@ package com.github.usevalue.thermalextremes;
 
 import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
+
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
 import java.util.logging.Level;
-
-import static com.github.usevalue.thermalextremes.Temperature.NORMAL;
 
 
 public class PlayerHandler implements Listener {
@@ -20,27 +23,32 @@ public class PlayerHandler implements Listener {
     private HashMap<Player, ThermalPlayer> playerMap;
 
     public PlayerHandler() {
-        playerMap = new HashMap<Player,ThermalPlayer>();
+        playerMap = new HashMap<>();
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerLoginEvent event) {
-        Player player = event.getPlayer();
-        ThermalPlayer thermalPlayer = addPlayer(player);
-    }
-
-    private ThermalPlayer addPlayer(Player p) {
-        ThermalPlayer thermalPlayer = new ThermalPlayer();
-        playerMap.putIfAbsent(p, thermalPlayer);
-        ThermalExtremes.plugin.getLogger().log(Level.INFO, "Now tracking "+p.getDisplayName()+" with a body temp of "+thermalPlayer.getTemp()+" C.");
-        return playerMap.get(p);
+        playerMap.putIfAbsent(event.getPlayer(), new ThermalPlayer());
+        ThermalExtremes.logger.log(Level.INFO,
+                event.getPlayer().getDisplayName()+" has logged in with a body temperature of "+playerMap.get(event.getPlayer()).getTemp()+" and a "+playerMap.get(event.getPlayer()).condition+" bodily condition.");
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         playerMap.remove(player);
-        ThermalExtremes.plugin.getLogger().log(Level.INFO, "Player "+player.getDisplayName()+" removed from tracking.");
+        ThermalExtremes.logger.log(Level.INFO, "Player "+player.getDisplayName()+" removed from tracking.");
+    }
+
+    @EventHandler
+    public void drinkingWater(PlayerItemConsumeEvent event) {
+        if(event.getItem().getItemMeta() instanceof PotionMeta) {
+            if(((PotionMeta) event.getItem().getItemMeta()).getBasePotionData().getType() == PotionType.WATER) {
+                ThermalPlayer t = playerMap.get(event.getPlayer());
+                t.hydrate(ThermalConfig.water_bottle_hydration);
+                event.getPlayer().sendMessage(t.hydrationBar());
+            }
+        }
     }
 
     public HashMap<Player,ThermalPlayer> getThermalPlayers() {
@@ -48,54 +56,65 @@ public class PlayerHandler implements Listener {
     }
 
     public ThermalPlayer getThermalPlayer(Player player) {
-        ThermalPlayer t = playerMap.get(player);
-        if(t==null) return addPlayer(player);
-        else return t;
+        return playerMap.get(player);
     }
 
-    // updatePlayer is called for each player each plugin tick.
-    // First, it verifies the player and their record.
-    // Second, it update's the player's hydration levels.
-    // Third, it calculates the player's exposure to thermal extremes.
-    // Fourth, it adjusts the player's temperature based on exposure versus their body's capacity to regulate.
-    // Fifth, it update's the player's bodily condition and returns the result to the clock.
 
-    public BodilyCondition updatePlayer(Player p, Temperature temp) {
+    public void updatePlayer(Player p, Temperature temp) {
 
         // 1.  Check that they exist
+        if(p==null) return;
         ThermalPlayer t = getThermalPlayer(p);
+        if (t == null) return;
+        BodilyCondition currentCondition = t.condition;
 
-        if (t == null) return null;
-        // 2.  Update hydration
-        // Water exposure
-        boolean watery = p.getLocation().getBlock().equals(Material.WATER);
+
+        // 2.  Player statuses
+
+        // Wetness
+
+        boolean watery = p.getLocation().getBlock().getType().equals(Material.WATER);
         if (watery) {
-            t.wetness = 200;
+            if(t.wetness<ThermalConfig.max_wetness) p.sendMessage(ChatColor.AQUA+"You got your clothes all wet.");
+            t.wetness = ThermalConfig.max_wetness;
         }
-        else if(t.wetness>0) t.wetness -= p.getLocation().getBlock().getLightLevel();
-        // Dehydration
-        boolean hydrated = t.hydration > 0;
+        else if(t.wetness>0) {
+            double drying = 0;
+            drying+=p.getLocation().getBlock().getLightLevel()*2; //  Stand in the light to dry your clothes.
+            if(!temp.equals(Temperature.COLD)) drying += p.getLocation().getBlock().getLightFromSky();
+            if(temp.equals(Temperature.HOT)) drying*=2;
+            t.wetness -= drying;
+            if(t.wetness<=0) {
+                t.wetness=0;
+                p.sendMessage("Your clothes have dried off.");
+            }
+        }
 
-        // 3.  Calculate exposure
-        double exposure = 0;
-        if (temp.equals(NORMAL)) {
-            if(t.condition.ordinalTemp<4) { // Represents fine weather, but player is nevertheless hypothermic.
-                exposure += t.wetness/10;
-                if(p.getLocation().getBlock().getLightLevel()<7) exposure++;  // Harder to warm up in the shade
-            }
-            else if(t.condition.ordinalTemp>4) {  // Fine weather, but hyperthermic
-                exposure -= t.wetness/10;
-                if(p.getLocation().getBlock().getLightLevel()>6) exposure++;  // Harder to cool down in the sun.
-                if(!hydrated) exposure*=2;
-                if(watery) exposure/=2;
-            }
+        // Dehydration
+
+        double hBefore = t.getHydrationPercent();
+        if(temp.equals(Temperature.HOT)) t.thirst(2);
+        double hAfter = t.getHydrationPercent();
+        if(hBefore>=60) {
+            if(hAfter<60) p.sendMessage(ChatColor.AQUA+"You're a bit thirsty.");
         }
-        else switch (temp) {
+        else if (hBefore>=40) {
+            if(hAfter<40) p.sendMessage(ChatColor.GREEN+"You're getting pretty dehydrated.  Get a bottle of water.");
+        }
+        else if (hBefore>=20) {
+            if(hAfter<20) p.sendMessage(ChatColor.GOLD+"You are dehydrated!  Drink a bottle of water!");
+        }
+        else if (hBefore>=10) {
+            if(hAfter<10) p.sendMessage(ChatColor.RED+"You are severely dehydrated!  Get water or you may die!");
+        }
+
+        // 3.  CALCULATE EXPOSURE
+        double exposure = 0;
+
+        switch (temp) {
             case HOT:
-                if (watery) break;
-                exposure++;
-                exposure += p.getLocation().getBlock().getLightFromSky();
-                exposure -= t.wetness/10;
+                exposure=p.getLocation().getBlock().getLightFromSky()-ThermalConfig.sky_light_sunny;
+                if(p.getLocation().getY()>=p.getWorld().getHighestBlockAt(p.getLocation()).getY()) exposure+=2;
                 break;
             case COLD:
                 if (watery) {
@@ -103,40 +122,30 @@ public class PlayerHandler implements Listener {
                     break;
                 }
                 else exposure = 1;
-                exposure*=t.wetness/10;
-                exposure-=p.getLocation().getBlock().getLightFromBlocks();
+                exposure *= 1+((float) t.wetness/100);
+                if(p.getLocation().getBlock().getLightFromBlocks()>=ThermalConfig.block_light_heated) exposure--;
             default:
                 break;
         }
 
         ThermalExtremes.debug("Degree of exposure for " + p.getDisplayName() + " is " + exposure + ".");
 
+        // EXPOSE TO TEMPERATURE CHANGE
+        if(exposure>1) t.expose(exposure, temp);
 
-        //  4.  Adjust temperature based on exposure
+        //  REGULATE BODILY TEMP
+        double regulation = 1;
+        t.regulate(regulation*ThermalConfig.base_bodily_regulation);
 
-
-
-        if(exposure>0) {
-            double change=0;
-            switch(temp) {
-                case NORMAL:
-                    if(t.condition.ordinalTemp<4) change=exposure*ThermalConfig.cold_temp_per_tick*-1;
-                    else change=exposure*ThermalConfig.hot_temp_per_tick;
-                    break;
-                case HOT:
-                    change=exposure*ThermalConfig.hot_temp_per_tick;
-                    break;
-                case COLD:
-                    change=exposure*ThermalConfig.cold_temp_per_tick;
-            }
-            t.expose(change);
+        //  5.  Update and notify
+        BodilyCondition newBod = t.updateBodilyCondition();
+        if(currentCondition.equals(newBod)) return;
+        else if(currentCondition.severity<newBod.severity) {
+            p.sendMessage("Warning!  Because of "+temp.cause+", you are now "+t.condition.color+t.condition.effectName+ChatColor.WHITE+".");
         }
-
-
-        t.regulate(ThermalConfig.base_bodily_regulation);
-
-        //  5.  Update and return bodily condition.
-        return t.updateBodilyCondition();
+        else {
+            p.sendMessage("You're recovering somewhat in the "+temp+" weather.  "+t.condition.color+"You're "+t.condition.effectName+" now.");
+        }
 
     }
 

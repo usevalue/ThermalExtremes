@@ -18,8 +18,9 @@ public class ThermalCommands implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
         if(args.length==0) {
-            sender.sendMessage("Possible ThermalExtremes commands:");
-            sender.sendMessage("status, list, heatwave, coldsnap, normalise.  Type 'thermal help [command]' for a description of what it does.");
+            sender.sendMessage(ChatColor.AQUA + "WORLD STATS:");
+            sender.sendMessage(ChatColor.AQUA + "World temperatures are " + ThermalExtremes.clock.checkTemp());
+            sender.sendMessage("Type /thermal help for commands info.");
             return true;
         }
 
@@ -30,7 +31,7 @@ public class ThermalCommands implements CommandExecutor {
                     sender.sendMessage("Please specify a player from console, i.e. thermal status [name]");
                     return true;
                 }
-                else p = ThermalExtremes.plugin.getServer().getPlayer(sender.getName());
+                else p = (ThermalExtremes.plugin.getServer().getPlayer(sender.getName()));
             }
             else {
                 p = ThermalExtremes.plugin.getServer().getPlayer(args[1]);
@@ -43,14 +44,13 @@ public class ThermalCommands implements CommandExecutor {
             sender.sendMessage(ChatColor.AQUA + "PLAYER STATS:");
             sender.sendMessage(ChatColor.AQUA + "Core body temperature: " + ChatColor.WHITE + Math.floor(t.getTemp() * 100) / 100 + "°C");
             sender.sendMessage(ChatColor.AQUA+"Wetness: "+ChatColor.WHITE+t.wetness);
-            sender.sendMessage(ChatColor.AQUA+"Hydration: "+ChatColor.WHITE+t.hydration);
-            sender.sendMessage(ChatColor.AQUA + "WORLD STATS:");
-            sender.sendMessage(ChatColor.AQUA + "World temperatures are " + ThermalExtremes.clock.checkTemp());
+            sender.sendMessage(ChatColor.AQUA+"Hydration: "+ChatColor.WHITE+t.hydrationBar());
             return true;
         }
 
         if(args[0].toLowerCase().equals("help")) {
-            sender.sendMessage("Help!");
+            sender.sendMessage(ChatColor.AQUA+"ThermalExtremes commands:");
+            sender.sendMessage(ChatColor.GRAY+"status, list, heatwave, coldsnap, normalise, toggle");
             return true;
         }
 
@@ -96,6 +96,7 @@ public class ThermalCommands implements CommandExecutor {
         }
 
         if(args[0].toLowerCase().equals("normalise")) {
+            ThermalExtremes.clock.normaliseTemps();
             return true;
         }
 

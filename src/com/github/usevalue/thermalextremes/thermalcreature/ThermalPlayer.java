@@ -1,20 +1,26 @@
 package com.github.usevalue.thermalextremes.thermalcreature;
 
+import com.github.usevalue.thermalextremes.Temperature;
 import com.github.usevalue.thermalextremes.ThermalConfig;
+import org.bukkit.ChatColor;
+
+import static com.github.usevalue.thermalextremes.Temperature.COLD;
+import static com.github.usevalue.thermalextremes.Temperature.HOT;
 
 public class ThermalPlayer extends ThermalCreature {
     private double personalTemp_degrees_C;
-    public int wetness = 0;
-    public int hydration = 100;
+    public int wetness; // Out of 300
+    private int hydration; // Out of 200
     public BodilyCondition condition;
-    public boolean isExposed=false;
     public static final double idealTemp = (ThermalConfig.comfort_min_C+ThermalConfig.comfort_max_C)/2;
 
     // private list of conditions
 
     public ThermalPlayer() {
         personalTemp_degrees_C = idealTemp; // Healthy temp in Celsius
-        condition= BodilyCondition.COMFORTABLE;
+        wetness = 0;
+        hydration = Math.floorDiv(ThermalConfig.max_hydration, 2);
+        updateBodilyCondition();
     }
 
     public double getTemp() {
@@ -60,11 +66,49 @@ public class ThermalPlayer extends ThermalCreature {
         }
     }
 
-    public boolean expose(double degree) {
-        personalTemp_degrees_C+=degree;
+    public boolean expose(double degree, Temperature impact) {
+        if(impact.equals(HOT)) {
+            personalTemp_degrees_C += degree*ThermalConfig.hot_temp_per_tick;
+        }
+        if(impact.equals(COLD)) {
+            personalTemp_degrees_C -= degree*ThermalConfig.cold_temp_per_tick;
+        }
         if(personalTemp_degrees_C>50) personalTemp_degrees_C = 50;
-        if(personalTemp_degrees_C<10) personalTemp_degrees_C = 10;
+        if(personalTemp_degrees_C<5) personalTemp_degrees_C = 10;
         return true;
+    }
+
+    public boolean thirst(int amount) {
+        hydration -= amount;
+        if(hydration>0) return true;
+        hydration=0;
+        return false;
+    }
+
+    public String hydrationBar() {
+        StringBuilder s = new StringBuilder(ChatColor.GRAY+ "{ ");
+        double hydrationInterval = ThermalConfig.max_hydration/20;
+        for(int x=0; x<20; x++) {
+            ChatColor c;
+            if(hydration>0&&hydration/hydrationInterval>=x) c = ChatColor.BLUE;
+            else c = ChatColor.WHITE;
+            s.append(c).append(c+"=");
+        }
+        s.append(ChatColor.GRAY+" }");
+        return s.toString();
+    }
+
+    public float getHydration() {
+        return hydration;
+    }
+
+    public double getHydrationPercent() {
+        return 100*(float)hydration/ ThermalConfig.max_hydration;
+    }
+
+    public void hydrate(int amount) {
+        hydration+=amount;
+        if(hydration>ThermalConfig.max_hydration) hydration=ThermalConfig.max_hydration;
     }
 
 }

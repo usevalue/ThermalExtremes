@@ -9,24 +9,23 @@ public class ThermalExtremes extends JavaPlugin {
 
     public static ThermalExtremes plugin;
     public static Logger logger = Bukkit.getLogger();
-    public static ThermalConfig configuration;
     public static PlayerHandler playerHandler;
     public static ThermalCommands commands;
     public static Clock clock;
     public static boolean debugMode;
-
+    private ThermalConfig config;
 
     @Override
     public void onEnable() {
         plugin = this;
-        configuration = new ThermalConfig();
+        config = new ThermalConfig();
         clock = new Clock();
         playerHandler = new PlayerHandler();
         getServer().getPluginManager().registerEvents(playerHandler, this);
         commands = new ThermalCommands();
         this.getCommand("thermal").setExecutor(commands);
         logger.log(Level.INFO, "[ThermalExtremes] Plugin enabled.  Drink plenty of water.");
-        debugMode = configuration.debug;
+        debugMode = ThermalConfig.debug;
     }
 
     @Override
