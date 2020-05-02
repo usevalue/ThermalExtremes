@@ -1,29 +1,29 @@
 package com.github.usevalue.thermalextremes.thermalcreature;
-
-import com.github.usevalue.thermalextremes.ThermalExtremes;
-import com.github.usevalue.thermalextremes.thermalcreature.ThermalCreature;
+import com.github.usevalue.thermalextremes.Temperature;
 import org.bukkit.ChatColor;
 
+import static com.github.usevalue.thermalextremes.Temperature.*;
+
 public enum BodilyCondition {
-        SEVERE_HYPOTHERMIA("freezing cold", "frostbitten", "!", ChatColor.BLACK,1),
-        HYPOTHERMIA("cold", "extremely cold", "!", ChatColor.BLUE, 2),
-        UNCOMFORTABLY_COLD("chill", "cold", ".", ChatColor.AQUA,3),
-        COMFORTABLE("warmth", "comfortable",".", ChatColor.WHITE,4),
-        UNCOMFORTABLY_WARM("heat", "hot", ".", ChatColor.YELLOW,5),
-        HYPERTHERMIA("sweltering heat", "overheated","!", ChatColor.GOLD,6),
-        SEVERE_HYPERTHERMIA("murderous heat", "suffering from heatstroke","!", ChatColor.RED,7);
+        SEVERE_HYPOTHERMIA("frostbitten",  ChatColor.BLACK,1,3, COLD),
+        HYPOTHERMIA("extremely cold", ChatColor.BLUE, 2,2, COLD),
+        UNCOMFORTABLY_COLD("cold",  ChatColor.AQUA,3,1, COLD),
+        COMFORTABLE("comfortable", ChatColor.WHITE,4,0, NORMAL),
+        UNCOMFORTABLY_WARM("hot", ChatColor.YELLOW,5,1,HOT),
+        HYPERTHERMIA("overheated", ChatColor.GOLD,6,2, HOT),
+        SEVERE_HYPERTHERMIA("suffering from heatstroke", ChatColor.RED,7,3,HOT);
 
         public String effectName;
-        public String descriptor;
-        public String punctuation;
         public ChatColor color;
         public int ordinalTemp;
+        public int severity;
+        public Temperature risk;
 
-        BodilyCondition(String effectName, String descriptor, String punctuation, ChatColor c, int ordinalTemp) {
+        BodilyCondition(String effectName, ChatColor c, int ordinalTemp, int severity, Temperature risk) {
             this.effectName = effectName;
-            this.descriptor = descriptor;
-            this.punctuation = punctuation;
             this.color=c;
             this.ordinalTemp = ordinalTemp;
+            this.severity=severity;
+            this.risk=risk;
         }
 }
