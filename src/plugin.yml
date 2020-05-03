@@ -9,3 +9,6 @@ commands:
     description: The main ThermalExtremes command
     usage: Unrecognised ThermalExtremes command.  Try /thermal or /thermal help
     aliases: [thermalextremes]
+  body:
+    description: Equivalent to /thermal status.
+    usage: Use /body for your own status, or /body [other] if you have the permission.

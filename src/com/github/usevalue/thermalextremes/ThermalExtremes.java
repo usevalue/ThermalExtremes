@@ -24,6 +24,7 @@ public class ThermalExtremes extends JavaPlugin {
         getServer().getPluginManager().registerEvents(playerHandler, this);
         commands = new ThermalCommands();
         this.getCommand("thermal").setExecutor(commands);
+        this.getCommand("body").setExecutor(commands);
         logger.log(Level.INFO, "[ThermalExtremes] Plugin enabled.  Drink plenty of water.");
         debugMode = ThermalConfig.debug;
     }
