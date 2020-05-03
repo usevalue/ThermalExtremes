@@ -69,9 +69,7 @@ public class Clock extends BukkitRunnable {
         else ThermalExtremes.debug("Global temperatures have been "+temp+" for "+duration+".  Random weather is disabled.");
 
         // Check player thermal situations
-        for(Player p : plugin.getServer().getOnlinePlayers()) {
-            ThermalExtremes.playerHandler.updatePlayer(p, temp);
-        }
+        ThermalExtremes.playerHandler.updatePlayers(temp);
 
     }
 

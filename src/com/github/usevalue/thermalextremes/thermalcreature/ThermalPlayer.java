@@ -3,34 +3,57 @@ package com.github.usevalue.thermalextremes.thermalcreature;
 import com.github.usevalue.thermalextremes.Temperature;
 import com.github.usevalue.thermalextremes.ThermalConfig;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 
 import static com.github.usevalue.thermalextremes.Temperature.COLD;
 import static com.github.usevalue.thermalextremes.Temperature.HOT;
 
 public class ThermalPlayer extends ThermalCreature {
-    private double personalTemp_degrees_C;
-    public int wetness; // Out of 300
-    private int hydration; // Out of 200
-    public BodilyCondition condition;
+
     public static final double idealTemp = (ThermalConfig.comfort_min_C+ThermalConfig.comfort_max_C)/2;
 
-    // private list of conditions
+    public final Player player;
 
-    public ThermalPlayer() {
+    // Body state
+    private double personalTemp_degrees_C;
+    public int wetness;
+    private int hydration;
+    public BodilyCondition condition;
+
+    // Current location
+    public Block standingOn;
+    public boolean ventilatedPlace;
+    public boolean sunlitPlace;
+    public boolean outsidePlace;
+    public boolean wateryPlace;
+    public boolean exposed = false;
+
+    public ThermalPlayer(Player p) {
         personalTemp_degrees_C = idealTemp; // Healthy temp in Celsius
         wetness = 0;
-        hydration = Math.floorDiv(ThermalConfig.max_hydration, 2);
+        hydration = ThermalConfig.max_hydration;
+        player = p;
         updateBodilyCondition();
+        updatePlace();
+    }
+
+    public void updatePlace() {
+        standingOn = player.getLocation().getBlock();
+        sunlitPlace = (standingOn.getLightFromSky() > ThermalConfig.sky_light_sunny);
+        outsidePlace = (standingOn.getLightFromSky()==15);
+        ventilatedPlace = (standingOn.getLightFromSky() > 0);
+        wateryPlace = standingOn.getType().equals(Material.WATER);
+        if (wateryPlace) {
+            if(wetness<ThermalConfig.max_wetness) player.sendMessage(ChatColor.AQUA+"Your clothes got all wet.");
+            wetness = ThermalConfig.max_wetness;
+        }
+
     }
 
     public double getTemp() {
         return personalTemp_degrees_C;
-    }
-
-    public boolean setTemp(double target) {
-        if(personalTemp_degrees_C==target) return false;
-        personalTemp_degrees_C = target;
-        return true;
     }
 
     public BodilyCondition updateBodilyCondition() {
@@ -98,10 +121,6 @@ public class ThermalPlayer extends ThermalCreature {
         return s.toString();
     }
 
-    public float getHydration() {
-        return hydration;
-    }
-
     public double getHydrationPercent() {
         return 100*(float)hydration/ ThermalConfig.max_hydration;
     }
@@ -109,6 +128,30 @@ public class ThermalPlayer extends ThermalCreature {
     public void hydrate(int amount) {
         hydration+=amount;
         if(hydration>ThermalConfig.max_hydration) hydration=ThermalConfig.max_hydration;
+    }
+
+    public String getWetnessDescription() {
+        String s;
+        double section = ThermalConfig.max_wetness/5;
+        int level = (int) Math.ceil(wetness/section);
+        switch(level) {
+            case 1:
+                s = "damp";
+                break;
+            case 2:
+                s = "wet";
+                break;
+            case 3:
+                s = "drenched";
+                break;
+            case 4:
+                s = "soaked";
+                break;
+            default:
+                s = "dry";
+                break;
+        }
+        return s;
     }
 
 }

@@ -4,18 +4,21 @@ import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.WeatherType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
 import java.util.logging.Level;
+
+import static com.github.usevalue.thermalextremes.Temperature.COLD;
 
 
 public class PlayerHandler implements Listener {
@@ -28,7 +31,7 @@ public class PlayerHandler implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerLoginEvent event) {
-        playerMap.putIfAbsent(event.getPlayer(), new ThermalPlayer());
+        playerMap.putIfAbsent(event.getPlayer(), new ThermalPlayer(event.getPlayer()));
         ThermalExtremes.logger.log(Level.INFO,
                 event.getPlayer().getDisplayName()+" has logged in with a body temperature of "+playerMap.get(event.getPlayer()).getTemp()+" and a "+playerMap.get(event.getPlayer()).condition+" bodily condition.");
     }
@@ -38,6 +41,12 @@ public class PlayerHandler implements Listener {
         Player player = event.getPlayer();
         playerMap.remove(player);
         ThermalExtremes.logger.log(Level.INFO, "Player "+player.getDisplayName()+" removed from tracking.");
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        ThermalPlayer t = getThermalPlayer(event.getPlayer());
+        t.updatePlace();
     }
 
     @EventHandler
@@ -59,8 +68,13 @@ public class PlayerHandler implements Listener {
         return playerMap.get(player);
     }
 
+    public void updatePlayers(Temperature temp) {
+        for(Player p : ThermalExtremes.plugin.getServer().getOnlinePlayers()) {
+            ThermalExtremes.playerHandler.updatePlayer(p, temp);
+        }
+    }
 
-    public void updatePlayer(Player p, Temperature temp) {
+    private void updatePlayer(Player p, Temperature temp) {
 
         // 1.  Check that they exist
         if(p==null) return;
@@ -68,20 +82,17 @@ public class PlayerHandler implements Listener {
         if (t == null) return;
         BodilyCondition currentCondition = t.condition;
 
+        long time = p.getWorld().getTime();
+        ThermalExtremes.logger.log(Level.INFO, "The time is " + time);
+        WeatherType currentWeather = p.getPlayerWeather();
 
         // 2.  Player statuses
 
-        // Wetness
-
-        boolean watery = p.getLocation().getBlock().getType().equals(Material.WATER);
-        if (watery) {
-            if(t.wetness<ThermalConfig.max_wetness) p.sendMessage(ChatColor.AQUA+"You got your clothes all wet.");
-            t.wetness = ThermalConfig.max_wetness;
-        }
-        else if(t.wetness>0) {
+        // Clothes dry
+        if(!t.wateryPlace&&t.wetness>0) {
             double drying = 0;
             drying+=p.getLocation().getBlock().getLightLevel()*2; //  Stand in the light to dry your clothes.
-            if(!temp.equals(Temperature.COLD)) drying += p.getLocation().getBlock().getLightFromSky();
+            if(!temp.equals(COLD)) drying += p.getLocation().getBlock().getLightFromSky();
             if(temp.equals(Temperature.HOT)) drying*=2;
             t.wetness -= drying;
             if(t.wetness<=0) {
@@ -109,15 +120,18 @@ public class PlayerHandler implements Listener {
         }
 
         // 3.  CALCULATE EXPOSURE
+
+        boolean currentlyExposed = t.exposed;
+
         double exposure = 0;
 
         switch (temp) {
             case HOT:
-                exposure=p.getLocation().getBlock().getLightFromSky()-ThermalConfig.sky_light_sunny;
+                exposure=t.standingOn.getLightFromSky()-ThermalConfig.sky_light_sunny;
                 if(p.getLocation().getY()>=p.getWorld().getHighestBlockAt(p.getLocation()).getY()) exposure+=2;
                 break;
             case COLD:
-                if (watery) {
+                if (t.wateryPlace) {
                     exposure = 10;
                     break;
                 }
@@ -128,10 +142,22 @@ public class PlayerHandler implements Listener {
                 break;
         }
 
-        ThermalExtremes.debug("Degree of exposure for " + p.getDisplayName() + " is " + exposure + ".");
+        if(currentlyExposed!=t.exposed) {
+            if(t.exposed) {
+                String because;
+                if(temp.equals(COLD)&&t.wateryPlace) because = "you're standing in water";
+                else if(t.sunlitPlace) because = "you're exposed to the elements";
+                else if(!t.ventilatedPlace) because = "this place has no ventilation";
+                else because = "you're just unlucky";
+                p.sendMessage("You're exposed to the extreme "+temp.cause+" because " + because + ".");
+            }
+            else {
+                p.sendMessage("You've found a shaded but well-ventilated space.  You can recover here.");
+            }
+        }
 
-        // EXPOSE TO TEMPERATURE CHANGE
-        if(exposure>1) t.expose(exposure, temp);
+        t.exposed = exposure>0;
+        if(t.exposed) t.expose(exposure, temp);
 
         //  REGULATE BODILY TEMP
         double regulation = 1;
@@ -139,12 +165,12 @@ public class PlayerHandler implements Listener {
 
         //  5.  Update and notify
         BodilyCondition newBod = t.updateBodilyCondition();
-        if(currentCondition.equals(newBod)) return;
-        else if(currentCondition.severity<newBod.severity) {
-            p.sendMessage("Warning!  Because of "+temp.cause+", you are now "+t.condition.color+t.condition.effectName+ChatColor.WHITE+".");
-        }
-        else {
-            p.sendMessage("You're recovering somewhat in the "+temp+" weather.  "+t.condition.color+"You're "+t.condition.effectName+" now.");
+        if(!currentCondition.equals(newBod)) {
+            if (currentCondition.severity < newBod.severity) {
+                p.sendMessage("Warning!  Because of " + temp.cause + ", you are now " + t.condition.color + t.condition.effectName + ChatColor.WHITE + ".");
+            } else {
+                p.sendMessage(ChatColor.AQUA+"You're recovering somewhat.  " + t.condition.color + "You're " + t.condition.effectName + " now.");
+            }
         }
 
     }
