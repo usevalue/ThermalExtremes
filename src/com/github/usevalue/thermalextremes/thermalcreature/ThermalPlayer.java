@@ -69,23 +69,22 @@ public class ThermalPlayer extends ThermalCreature {
         return target;
     }
 
-    public boolean regulate(double d) {  // Returns true if the creature is at its ideal temperature.
-        if(personalTemp_degrees_C==idealTemp) return true;
-        else if(personalTemp_degrees_C>idealTemp) {
+    public void regulate() {
+        if(personalTemp_degrees_C==idealTemp) return;
+        double d = ThermalConfig.base_bodily_regulation;
+        if(personalTemp_degrees_C>idealTemp) {
+            if(wetness>0) d*=1+(wetness/ThermalConfig.max_wetness);
             personalTemp_degrees_C-=d;
             if(personalTemp_degrees_C<=idealTemp) {
                 personalTemp_degrees_C=idealTemp;
-                return true;
             }
-            return false;
         }
-        else {
+        else if(personalTemp_degrees_C<idealTemp){
+            if(wetness>0) d/=1+(wetness/ThermalConfig.max_wetness);
             personalTemp_degrees_C+=d;
             if(personalTemp_degrees_C>idealTemp) {
                 personalTemp_degrees_C=idealTemp;
-                return true;
             }
-            return false;
         }
     }
 
@@ -128,6 +127,10 @@ public class ThermalPlayer extends ThermalCreature {
     public void hydrate(int amount) {
         hydration+=amount;
         if(hydration>ThermalConfig.max_hydration) hydration=ThermalConfig.max_hydration;
+    }
+
+    public void work(int amount) {
+        personalTemp_degrees_C += amount*ThermalConfig.heating_from_work;
     }
 
     public String getWetnessDescription() {

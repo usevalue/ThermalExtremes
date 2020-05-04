@@ -15,6 +15,7 @@ public class ThermalConfig {
     public static int max_wetness;
     public static int max_hydration;
     public static int water_bottle_hydration;
+    public static double heating_from_work;
     public static double comfort_max_C;
     public static double comfort_min_C;
     public static double hypothermia_degrees_C;
@@ -49,6 +50,7 @@ public class ThermalConfig {
         max_wetness = c.getInt("max_wetness");
         max_hydration = c.getInt("max_hydration");
         water_bottle_hydration = c.getInt("water_bottle_hydration");
+        heating_from_work = c.getDouble("heating_from_work");
         hypothermia_degrees_C = c.getDouble("hypothermia_degrees_C");
         severe_hypothermia_degrees_C = c.getDouble("severe_hypothermia_degrees_C");
         hyperthermia_degrees_C = c.getDouble("hyperthermia_degrees_C");
