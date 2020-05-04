@@ -4,7 +4,6 @@ import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 
 import org.bukkit.ChatColor;
-import org.bukkit.WeatherType;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,12 +14,15 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
 import java.util.logging.Level;
 
 import static com.github.usevalue.thermalextremes.Temperature.COLD;
+import static com.github.usevalue.thermalextremes.Temperature.HOT;
 
 
 public class PlayerHandler implements Listener {
@@ -53,7 +55,7 @@ public class PlayerHandler implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         playerMap.remove(player);
-        ThermalExtremes.logger.log(Level.INFO, "Player "+player.getDisplayName()+" removed from tracking.");
+        ThermalExtremes.debug("Player "+player.getDisplayName()+" removed from tracking.");
     }
 
     @EventHandler
@@ -76,13 +78,7 @@ public class PlayerHandler implements Listener {
     @EventHandler
     public void playerWorking(BlockBreakEvent event) {
         ThermalPlayer t = getThermalPlayer(event.getPlayer());
-        int work = getWork(event.getBlock());
-        t.work(work);
-    }
-
-
-    private int getWork(Block block) {
-        return 1;
+        t.work(event.getBlock().getType().getHardness());
     }
 
     public void updatePlayers(Temperature temp) {
@@ -99,40 +95,28 @@ public class PlayerHandler implements Listener {
         if (t == null) return;
 
         time = p.getWorld().getTime();
+        boolean stormy = p.getWorld().hasStorm();
         BodilyCondition currentCondition = t.condition;
-        WeatherType currentWeather = p.getPlayerWeather();
+
 
         // 2.  Player statuses
 
-        // Clothes dry
-        if(!t.wateryPlace&&t.wetness>0) {
-            double drying = 0;
-            drying+=p.getLocation().getBlock().getLightLevel()*2; //  Stand in the light to dry your clothes.
-            if(!temp.equals(COLD)) drying += p.getLocation().getBlock().getLightFromSky();
+        // Clothes drying
+        if(t.wateryPlace) {
+            t.wetness=ThermalConfig.max_wetness;
+        } else if(t.outsidePlace&&stormy) {
+            t.wetness+=6;
+        } else if(t.wetness>0) {
+            double drying = 1;
+            if(t.warmedPlace) drying+=1+t.standingOn.getLightFromBlocks()-ThermalConfig.block_light_heated; //  Stand by the fire to dry your clothes.
+            if(!temp.equals(COLD)) drying += (float)t.standingOn.getLightFromSky()/2;
             if(temp.equals(Temperature.HOT)) drying*=2;
-            t.wetness -= drying;
+            t.wetness -= Math.floor(drying);
             if(t.wetness<=0) {
                 t.wetness=0;
+                if(t.sweating) t.sweating=false;
                 p.sendMessage("Your clothes have dried off.");
             }
-        }
-
-        // Dehydration
-
-        double hBefore = t.getHydrationPercent();
-        if(temp.equals(Temperature.HOT)) t.thirst(2);
-        double hAfter = t.getHydrationPercent();
-        if(hBefore>=60) {
-            if(hAfter<60) p.sendMessage(ChatColor.AQUA+"You're a bit thirsty.");
-        }
-        else if (hBefore>=40) {
-            if(hAfter<40) p.sendMessage(ChatColor.GREEN+"You're getting pretty dehydrated.  Get a bottle of water.");
-        }
-        else if (hBefore>=20) {
-            if(hAfter<20) p.sendMessage(ChatColor.GOLD+"You are dehydrated!  Drink a bottle of water!");
-        }
-        else if (hBefore>=10) {
-            if(hAfter<10) p.sendMessage(ChatColor.RED+"You are severely dehydrated!  Get water or you may die!");
         }
 
         // 3.  CALCULATE WEATHER EXPOSURE
@@ -160,7 +144,7 @@ public class PlayerHandler implements Listener {
                     }
                 }
                 else if(!t.ventilatedPlace) exposure++;
-                if(!currentWeather.equals(WeatherType.CLEAR)) exposure/=4;
+                if(stormy) exposure/=4;
                 break;
             case COLD:
                 // Wet
@@ -171,11 +155,12 @@ public class PlayerHandler implements Listener {
                 }
                 if(t.sunlitPlace) {
                     exposure+=t.standingOn.getLightFromSky()-ThermalConfig.sky_light_sunny;
-                    because="you are exposed to the elements.";
+                    because = "you are exposed to the elements.";
                 }
-                if(t.wetness>0.1*ThermalConfig.max_wetness)
-                    exposure *= 0.2+((double) t.wetness)/ThermalConfig.max_wetness;
+                if(t.wetness>0.1*ThermalConfig.max_wetness) {
+                    exposure *= 0.2 + ((double) t.wetness) / ThermalConfig.max_wetness;
                     because = "of your wet clothes.";
+                }
                 if(time>13000) {
                     because = "of the freezing night";
                     exposure*=3;
@@ -184,6 +169,8 @@ public class PlayerHandler implements Listener {
             default:
                 break;
         }
+
+        if(t.debugging&&exposure>0) p.sendMessage(temp+" WEATHER: your exposure is "+exposure);
 
         t.exposed = exposure>0;
 
@@ -209,8 +196,19 @@ public class PlayerHandler implements Listener {
             }
         }
 
+        if(t.condition.severity>1) {
+            if(t.condition.risk.equals(COLD)) {
+
+            }
+            else if(t.condition.risk.equals(HOT)) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION,300,t.condition.severity));
+            }
+        }
+
         // 7.   Player's body temperature regulates, assuming they're still alive.
         if(p.getHealth()>0) t.regulate();
+
+
     }
 
 }

@@ -20,8 +20,12 @@ public class Clock extends BukkitRunnable {
         clock=this;
         random = new Random();
         duration = 0;
-        randomWeather = ThermalConfig.random_weather;
+        loadClockConfigs();
         runTaskTimer(plugin, 5, ThermalConfig.interval);
+    }
+
+    public void loadClockConfigs() {
+        randomWeather = ThermalConfig.random_weather;
     }
 
     @Override

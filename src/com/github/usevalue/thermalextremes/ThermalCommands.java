@@ -59,8 +59,14 @@ public class ThermalCommands implements CommandExecutor {
                     sender.sendMessage("Random weather changes are now " + s + ".");
                     return true;
                 case "debug":
-                    ThermalExtremes.debugMode = !ThermalExtremes.debugMode;
-                    sender.sendMessage("Toggled console debug mode.");
+                    if(sender instanceof ConsoleCommandSender) {
+                        ThermalExtremes.debugMode = !ThermalExtremes.debugMode;
+                        sender.sendMessage("Toggled console debug mode.");
+                    }
+                    else {
+                        ThermalExtremes.playerHandler.getThermalPlayer((Player) sender).debugging = !ThermalExtremes.playerHandler.getThermalPlayer((Player) sender).debugging;
+                        sender.sendMessage("Player debug mode: "+ThermalExtremes.playerHandler.getThermalPlayer((Player)sender).debugging);
+                    }
                     return true;
                 case "heatwave":
                     if (ThermalExtremes.clock.beginHeatwave()) sender.sendMessage("Starting a heatwave!");
@@ -71,6 +77,9 @@ public class ThermalCommands implements CommandExecutor {
                     return true;
                 case "normalise":
                     ThermalExtremes.clock.normaliseTemps();
+                    return true;
+                case "reload":
+                    ThermalExtremes.plugin.reloadTheConfigs();
                     return true;
                 default:
                     return false;

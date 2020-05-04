@@ -11,7 +11,7 @@ block_light_heated: 12
 
 # Player settings
 base_bodily_regulation: 0.48
-heating_from_work: 1.0
+heating_from_work: 0.02
 max_hydration: 200
 water_bottle_hydration: 40
 max_wetness: 300

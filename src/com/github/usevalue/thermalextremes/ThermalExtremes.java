@@ -26,7 +26,7 @@ public class ThermalExtremes extends JavaPlugin {
         this.getCommand("thermal").setExecutor(commands);
         this.getCommand("body").setExecutor(commands);
         logger.log(Level.INFO, "[ThermalExtremes] Plugin enabled.  Drink plenty of water.");
-        debugMode = ThermalConfig.debug;
+
     }
 
     @Override
@@ -38,5 +38,9 @@ public class ThermalExtremes extends JavaPlugin {
         if(debugMode) logger.log(Level.INFO, m);
     }
 
-
+    public void reloadTheConfigs() {
+        config = new ThermalConfig();
+        debugMode = ThermalConfig.debug;
+        clock.loadClockConfigs();
+    }
 }
