@@ -1,5 +1,5 @@
 name: ThermalExtremes
-version: 0.1
+version: 0.1.1
 author: James Pollard
 main: com.github.usevalue.thermalextremes.ThermalExtremes
 api-version: 1.15
@@ -12,3 +12,11 @@ commands:
   body:
     description: Equivalent to /thermal status.
     usage: Use /body for your own status, or /body [other] if you have the permission.
+
+permissions:
+  thermalextremes.admin:
+    description: Use of /thermal command
+    default: op
+  thermalextremes.user:
+    description: Use of /body command
+    default: true

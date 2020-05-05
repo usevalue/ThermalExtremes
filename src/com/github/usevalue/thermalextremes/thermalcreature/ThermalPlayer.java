@@ -1,5 +1,6 @@
 package com.github.usevalue.thermalextremes.thermalcreature;
 
+import com.github.usevalue.thermalextremes.Clock;
 import com.github.usevalue.thermalextremes.Temperature;
 import com.github.usevalue.thermalextremes.ThermalConfig;
 import org.bukkit.ChatColor;
@@ -31,7 +32,7 @@ public class ThermalPlayer extends ThermalCreature {
     public boolean outsidePlace;
     public boolean wateryPlace;
     public boolean exposed = false;
-    public boolean sweating = false;
+    private boolean sweating = false;
 
     public ThermalPlayer(Player p) {
         personalTemp_degrees_C = idealTemp; // Healthy temp in Celsius
@@ -76,7 +77,7 @@ public class ThermalPlayer extends ThermalCreature {
         BodilyCondition target;
         if(personalTemp_degrees_C>=ThermalConfig.severe_hyperthermia_degrees_C) target = BodilyCondition.SEVERE_HYPERTHERMIA;
         else if(personalTemp_degrees_C>= ThermalConfig.hyperthermia_degrees_C) target = BodilyCondition.HYPERTHERMIA;
-        else if(personalTemp_degrees_C>=ThermalConfig.comfort_max_C) target = BodilyCondition.UNCOMFORTABLY_WARM;
+        else if(personalTemp_degrees_C>=ThermalConfig.comfort_max_C) target = BodilyCondition.OVERHEATED;
         else if(personalTemp_degrees_C>ThermalConfig.comfort_min_C) target = BodilyCondition.COMFORTABLE;
         else if(personalTemp_degrees_C>ThermalConfig.hypothermia_degrees_C) target = BodilyCondition.UNCOMFORTABLY_COLD;
         else if(personalTemp_degrees_C>=ThermalConfig.severe_hypothermia_degrees_C) target = BodilyCondition.HYPOTHERMIA;
@@ -93,17 +94,19 @@ public class ThermalPlayer extends ThermalCreature {
         if(personalTemp_degrees_C==idealTemp) regulation = 0;
         else if(personalTemp_degrees_C>idealTemp) { //  Too warm
             regulation*=-1;
-            if(condition.severity>0) sweat(10);
-            if(wetness>0) regulation*=1+(wetness/ThermalConfig.max_wetness);
+            if(condition.severity>0||sweating) if(!sweat(condition.severity)&& Clock.random.nextDouble()>0.9) player.damage(0.5);
+            if(wetness>0) regulation*=1+((double)wetness/ThermalConfig.max_wetness);
         }
         else {  // Too cold
-            if(wetness>0) regulation/=1+(wetness/ThermalConfig.max_wetness);
+            if(wetness>0) regulation/=1+((double)wetness/ThermalConfig.max_wetness);
         }
+        if(!ventilatedPlace) regulation/=4;
         personalTemp_degrees_C+=regulation;
-        if(debugging&&regulation!=0) player.sendMessage("Homeostatic regulation changed temperature by "+regulation+"°C to "+personalTemp_degrees_C);
-        if((regulation>0&&personalTemp_degrees_C>idealTemp) ||(regulation<0&&personalTemp_degrees_C<idealTemp)) // Correct for overshoot
-            personalTemp_degrees_C=idealTemp;
-
+        if(debugging&&regulation!=0) player.sendMessage("Regulation changed temperature by "+regulation+"°C to "+personalTemp_degrees_C);
+        if((regulation>0&&personalTemp_degrees_C>=idealTemp) ||(regulation<0&&personalTemp_degrees_C<=idealTemp)) { // Correct for overshoot
+            personalTemp_degrees_C = idealTemp;
+            sweating=false;
+        }
 
         double hydrationAfter = 100*hydration/ThermalConfig.max_hydration;
         if(hydrationBefore>=60) {
@@ -143,47 +146,44 @@ public class ThermalPlayer extends ThermalCreature {
         if(!sweating) {
             player.sendMessage("You've broken out in a sweat.");
             sweating=true;
-            return true;
         }
         if(hydration>=amount) {
-            hydration-=amount;
-            wetness+=Math.floor(amount);
+            hydration-=amount*ThermalConfig.sweating_hydration_cost;
+            wetness+=amount*ThermalConfig.sweating_wetness_bonus;
             return true;
         }
-        else {
-            hydration=0;
-            return false;
-        }
+        hydration=0;
+        return false;
     }
 
     public String hydrationBar() {
         StringBuilder s = new StringBuilder(ChatColor.GRAY+ "{ ");
-        double hydrationInterval = ThermalConfig.max_hydration/20;
+        double hydrationInterval = (double)ThermalConfig.max_hydration/20;
         for(int x=0; x<20; x++) {
             ChatColor c;
             if(hydration>0&&hydration/hydrationInterval>=x) c = ChatColor.BLUE;
             else c = ChatColor.WHITE;
-            s.append(c).append(c+"=");
+            s.append(c).append(c).append("=");
         }
-        s.append(ChatColor.GRAY+" }");
+        s.append(ChatColor.GRAY).append(" }");
         return s.toString();
     }
 
     public String getWetnessDescription() {
         String s;
-        double section = ThermalConfig.max_wetness/5;
+        double section = (double)ThermalConfig.max_wetness/5;
         int level = (int) Math.ceil(wetness/section);
         switch(level) {
-            case 1:
+            case 2:
                 s = "damp";
                 break;
-            case 2:
+            case 3:
                 s = "wet";
                 break;
-            case 3:
+            case 4:
                 s = "drenched";
                 break;
-            case 4:
+            case 5:
                 s = "soaked";
                 break;
             default:

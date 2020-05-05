@@ -10,7 +10,7 @@ import static com.github.usevalue.thermalextremes.Temperature.*;
 public class Clock extends BukkitRunnable {
 
     public static Clock clock;
-    private Random random;
+    public static Random random;
     private int duration;
     private Temperature temp = Temperature.NORMAL;
     private ThermalExtremes plugin = com.github.usevalue.thermalextremes.ThermalExtremes.plugin;

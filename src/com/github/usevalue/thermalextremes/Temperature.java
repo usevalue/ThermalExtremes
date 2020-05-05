@@ -2,7 +2,7 @@ package com.github.usevalue.thermalextremes;
 
 public enum Temperature {
     HOT("the heat"),
-    NORMAL("your body"),
+    NORMAL("poor working conditions"),
     COLD("the cold");
 
     public String cause;

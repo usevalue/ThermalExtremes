@@ -4,7 +4,6 @@ import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 
 import org.bukkit.ChatColor;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -105,16 +104,15 @@ public class PlayerHandler implements Listener {
         if(t.wateryPlace) {
             t.wetness=ThermalConfig.max_wetness;
         } else if(t.outsidePlace&&stormy) {
-            t.wetness+=6;
+            t.wetness+=12;
         } else if(t.wetness>0) {
-            double drying = 1;
-            if(t.warmedPlace) drying+=1+t.standingOn.getLightFromBlocks()-ThermalConfig.block_light_heated; //  Stand by the fire to dry your clothes.
-            if(!temp.equals(COLD)) drying += (float)t.standingOn.getLightFromSky()/2;
-            if(temp.equals(Temperature.HOT)) drying*=2;
+            double drying = 2;
+            if(t.warmedPlace) drying*=1+t.standingOn.getLightFromBlocks()-ThermalConfig.block_light_heated; //  Stand by the fire to dry your clothes.
+            if(temp.equals(COLD)) drying -=2;
+            if(temp.equals(Temperature.HOT)&&t.sunlitPlace) drying+=2;
             t.wetness -= Math.floor(drying);
             if(t.wetness<=0) {
                 t.wetness=0;
-                if(t.sweating) t.sweating=false;
                 p.sendMessage("Your clothes have dried off.");
             }
         }
@@ -122,44 +120,43 @@ public class PlayerHandler implements Listener {
         // 3.  CALCULATE WEATHER EXPOSURE
 
         boolean currentlyExposed = t.exposed;
-        String because = "you're just unlucky.";
+        String because = "You're just unlucky.";
         double exposure = 0;
         if(!t.ventilatedPlace) {
-            exposure+=0.01;
-            because = "this place has no ventilation";
+            exposure+=0.05;
+            because = "This place is poorly ventilated; it is difficult to breathe.";
         }
 
         switch (temp) {
             case HOT:
                 double radiantHeat = 1;
                 if (t.sunlitPlace) {
-                    if(time<12000) {
-                        because = "of the blazing hot sun.";
+                    if(time<11000) {
+                        because = "You are exposed to the sun's blazing wrath!";
                         exposure+=2;
                         if(t.outsidePlace) exposure++;
                     }
                     else {
-                        exposure += radiantHeat;  // Radiant heat > 0
-                        because = "of the stiflingly hot air.";
+                        because = "The night is so hot that it's difficult to stay cool.";
                     }
+                    exposure += radiantHeat;  // Radiant heat > 0
                 }
-                else if(!t.ventilatedPlace) exposure++;
                 if(stormy) exposure/=4;
                 break;
             case COLD:
                 // Wet
                 if(t.wateryPlace) {
                     exposure=5;
-                    because = "of your watery situation.";
+                    because = "Swimming?  In a cold snap?  Bad idea.";
                     break;
                 }
                 if(t.sunlitPlace) {
                     exposure+=t.standingOn.getLightFromSky()-ThermalConfig.sky_light_sunny;
-                    because = "you are exposed to the elements.";
+                    because = "It's cold out here!";
                 }
                 if(t.wetness>0.1*ThermalConfig.max_wetness) {
-                    exposure *= 0.2 + ((double) t.wetness) / ThermalConfig.max_wetness;
-                    because = "of your wet clothes.";
+                    exposure *= 1+((2*((double) t.wetness)) / ThermalConfig.max_wetness);
+                    because = "Your wet clothes put you at severe risk during a cold snap.";
                 }
                 if(time>13000) {
                     because = "of the freezing night";
@@ -170,12 +167,12 @@ public class PlayerHandler implements Listener {
                 break;
         }
 
-        if(t.debugging&&exposure>0) p.sendMessage(temp+" WEATHER: your exposure is "+exposure);
+        if(t.debugging&&exposure>0) p.sendMessage(temp+"Current exposure is "+exposure+":"+because);
 
         t.exposed = exposure>0;
 
         if(t.exposed!=currentlyExposed) {
-            if(t.exposed) p.sendMessage("You're exposed to the elements because "+because);
+            if(t.exposed) p.sendMessage(because);
             else p.sendMessage("You've found a sheltered, well-ventilated place where you can recover.");
         }
 
@@ -188,20 +185,22 @@ public class PlayerHandler implements Listener {
         //  6.  Bodily conditions
 
         BodilyCondition newBod = t.updateBodilyCondition();
-        if(!currentCondition.equals(newBod)) {
+        if(!currentCondition.equals(newBod)&&newBod.severity>1) {
             if (currentCondition.severity < newBod.severity) {
                 p.sendMessage("Warning!  Because of " + temp.cause + ", you are now " + t.condition.color + t.condition.effectName + ChatColor.WHITE + ".");
             } else {
+                if(currentCondition.severity>0)
                 p.sendMessage(ChatColor.AQUA+"You're recovering somewhat.  " + t.condition.color + "You're " + t.condition.effectName + " now.");
+                else p.sendMessage(ChatColor.AQUA+"You've recovered!");
             }
         }
 
         if(t.condition.severity>1) {
             if(t.condition.risk.equals(COLD)) {
-
+                p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 200, t.condition.severity-1));
             }
             else if(t.condition.risk.equals(HOT)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION,300,t.condition.severity));
+                p.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION,200,t.condition.severity-1));
             }
         }
 

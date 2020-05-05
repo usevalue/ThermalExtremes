@@ -9,7 +9,7 @@ public enum BodilyCondition {
         HYPOTHERMIA("hypothermic", ChatColor.BLUE, 2,2, COLD),
         UNCOMFORTABLY_COLD("cold",  ChatColor.AQUA,3,1, COLD),
         COMFORTABLE("comfortable", ChatColor.WHITE,4,0, NORMAL),
-        UNCOMFORTABLY_WARM("overheated", ChatColor.YELLOW,5,1,HOT),
+        OVERHEATED("overheated", ChatColor.YELLOW,5,1,HOT),
         HYPERTHERMIA("suffering from heat exhaustion", ChatColor.GOLD,6,2, HOT),
         SEVERE_HYPERTHERMIA("suffering from heatstroke", ChatColor.RED,7,3,HOT);
 

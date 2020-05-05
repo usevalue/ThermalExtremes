@@ -20,6 +20,10 @@ public class ThermalCommands implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
         if (label.equals("body")) {
+            if(!sender.hasPermission("thermalextremes.user")) {
+                sender.sendMessage("Sorry, you don't have that permission!");
+                return true;
+            }
             ThermalPlayer t;
             if (args.length == 0) {
                 if (sender instanceof ConsoleCommandSender) {
@@ -27,6 +31,10 @@ public class ThermalCommands implements CommandExecutor {
                     return false;
                 } else t = ThermalExtremes.playerHandler.getThermalPlayer((Player) sender);
             } else if (args.length == 1) {
+                if(!sender.hasPermission("thermalextremes.other")) {
+                    sender.sendMessage("Sorry, you don't have permission to get other players' stats!");
+                    return true;
+                }
                 Player p = ThermalExtremes.plugin.getServer().getPlayer(args[0]);
                 t = ThermalExtremes.playerHandler.getThermalPlayer(p);
             } else return false;
@@ -35,12 +43,17 @@ public class ThermalCommands implements CommandExecutor {
         }
 
         if (label.equals("thermal")) {
+
             if (args.length == 0) {
-                sender.sendMessage(ChatColor.AQUA + "WORLD STATS:");
                 sender.sendMessage(ChatColor.AQUA + "World temperatures are " + ThermalExtremes.clock.checkTemp());
-                sender.sendMessage("Type /thermal help for commands info.");
+                if(sender.hasPermission("thermalextremes.admin")) sender.sendMessage("Type /thermal help for commands info.");
                 return true;
-            } else switch (args[0]) {
+            }
+            if(!sender.hasPermission("thermalextremes.admin")) {
+                sender.sendMessage("That's an administrative command!  Use /body instead.");
+                return true;
+            }
+            switch (args[0]) {
                 case "help":
                     sender.sendMessage(ChatColor.AQUA + "ThermalExtremes commands:");
                     sender.sendMessage(ChatColor.GRAY + "list, heatwave, coldsnap, normalise, random, debug");
@@ -91,7 +104,7 @@ public class ThermalCommands implements CommandExecutor {
 
     private void bodyInfo(CommandSender recipient, ThermalPlayer t) {
         recipient.sendMessage(ChatColor.AQUA + "PLAYER STATS:");
-        recipient.sendMessage(ChatColor.AQUA + "Core body temperature: " + ChatColor.WHITE + Math.floor(t.getTemp() * 100) / 100 + "°C");
+        recipient.sendMessage(ChatColor.AQUA + "Core body temperature: " + ChatColor.WHITE + Math.floor(t.getTemp() * 100) / 100 + "°C ("+t.condition+")");
         recipient.sendMessage(ChatColor.AQUA+"Clothing: "+t.getWetnessDescription());
         recipient.sendMessage(ChatColor.AQUA+"Hydration: "+ChatColor.WHITE+t.hydrationBar());
     }

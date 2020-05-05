@@ -16,6 +16,9 @@ public class ThermalConfig {
     public static int max_hydration;
     public static int water_bottle_hydration;
     public static double heating_from_work;
+    public static double sweating_wetness_bonus;
+    public static double sweating_hydration_cost;
+
     public static double comfort_max_C;
     public static double comfort_min_C;
     public static double hypothermia_degrees_C;
@@ -63,7 +66,8 @@ public class ThermalConfig {
         coldsnap_severity = c.getDouble("coldsnap.severity");
         coldsnap_min_duration = c.getDouble("coldsnap.minimum_duration");
         coldsnap_max_duration = c.getDouble("coldsnap.maximum_duration");
-
+        sweating_wetness_bonus = c.getDouble("sweating.wetness_bonus");
+        sweating_hydration_cost = c.getDouble("sweating.hydration_cost");
     }
 
 }
