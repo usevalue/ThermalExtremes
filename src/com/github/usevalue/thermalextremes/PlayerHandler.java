@@ -4,6 +4,8 @@ import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 
 import org.bukkit.ChatColor;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,6 +19,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.logging.Level;
 
@@ -26,40 +29,105 @@ import static com.github.usevalue.thermalextremes.Temperature.HOT;
 
 public class PlayerHandler implements Listener {
 
-    private HashMap<Player, ThermalPlayer> playerMap;
+    private File playersFile = new File(ThermalExtremes.plugin.getDataFolder(), "thermal_players.yml");
+    private YamlConfiguration playerBase;
+    private HashMap<String, ThermalPlayer> playerMap;
     private long time;
 
     public PlayerHandler() {
+
+        try {
+            playerBase = new YamlConfiguration();
+            if (playersFile.exists()) {
+                ThermalExtremes.logger.log(Level.INFO, "Loaded pre-existing file.");
+                playerBase.load(playersFile);
+            } else {
+                ThermalExtremes.logger.log(Level.INFO, "Creating new ThermalPlayers file.");
+            }
+        }
+        catch (Exception e) { ThermalExtremes.logger.log(Level.WARNING, "Problem encountered while trying to load your thermal_players.yml!"); }
+
         playerMap = new HashMap<>();
-        for(Player p : ThermalExtremes.plugin.getServer().getOnlinePlayers())
-            playerMap.putIfAbsent(p, new ThermalPlayer(p));
+
+
+        for(Player p : ThermalExtremes.plugin.getServer().getOnlinePlayers()) {
+            ThermalPlayer t = null;
+            if(playerBase!=null) {
+                t = parsePlayerData(p);
+            }
+            if(t==null) t = new ThermalPlayer(p);
+            playerMap.putIfAbsent(p.getDisplayName(), t);
+        }
     }
 
-    public HashMap<Player,ThermalPlayer> getThermalPlayers() {
+    public boolean savePlayers() {
+        for (String name : playerMap.keySet()) savePlayer(name);
+        return saveFile();
+    }
+
+    public boolean saveFile() {
+        try {
+            playerBase.save(playersFile);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void savePlayer(String name) {
+        ConfigurationSection s = playerBase.getConfigurationSection(name);
+        if(s==null) s = playerBase.createSection(name);
+        ThermalPlayer t = playerMap.get(name);
+        s.set("temperature",t.getTemp());
+        s.set("wetness", t.wetness);
+        s.set("hydration", t.getHydration());
+    }
+
+    private ThermalPlayer parsePlayerData(Player p) {
+        if(playerBase.getKeys(false).contains(p.getDisplayName())) {
+            ConfigurationSection s = playerBase.getConfigurationSection(p.getDisplayName());
+            if(s==null) {
+              return null;
+            }
+            else {
+                double tmp = s.getDouble("temperature",ThermalPlayer.idealTemp);
+                int wet = s.getInt("wetness",0);
+                int hyd = s.getInt("hydration", ThermalConfig.max_hydration);
+                return new ThermalPlayer(p, tmp, wet, hyd);
+            }
+        }
+        return null;
+    }
+
+    public HashMap<String,ThermalPlayer> getThermalPlayers() {
         return playerMap;
     }
 
-    public ThermalPlayer getThermalPlayer(Player player) {
-        return playerMap.get(player);
+    public ThermalPlayer getThermalPlayer(String name) {
+        return playerMap.get(name);
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerLoginEvent event) {
-        playerMap.putIfAbsent(event.getPlayer(), new ThermalPlayer(event.getPlayer()));
+        ThermalPlayer t = parsePlayerData(event.getPlayer());
+        if(t==null) t = new ThermalPlayer(event.getPlayer());
+        playerMap.putIfAbsent(event.getPlayer().getDisplayName(), t);
         ThermalExtremes.logger.log(Level.INFO,
-                event.getPlayer().getDisplayName()+" has logged in with a body temperature of "+playerMap.get(event.getPlayer()).getTemp()+" and a "+playerMap.get(event.getPlayer()).condition+" bodily condition.");
+                event.getPlayer().getDisplayName()+" has logged in with a body temperature of "+t.getTemp()+" and a "+t.condition+" bodily condition.");
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        playerMap.remove(player);
-        ThermalExtremes.debug("Player "+player.getDisplayName()+" removed from tracking.");
+        String name = event.getPlayer().getDisplayName();
+        savePlayer(name);
+        saveFile();
+        playerMap.remove(name);
+        ThermalExtremes.debug("Player "+name+" saved to file.");
     }
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        ThermalPlayer t = getThermalPlayer(event.getPlayer());
+        ThermalPlayer t = getThermalPlayer(event.getPlayer().getDisplayName());
         t.updatePlace();
     }
 
@@ -67,7 +135,7 @@ public class PlayerHandler implements Listener {
     public void drinkingWater(PlayerItemConsumeEvent event) {
         if(event.getItem().getItemMeta() instanceof PotionMeta) {
             if(((PotionMeta) event.getItem().getItemMeta()).getBasePotionData().getType() == PotionType.WATER) {
-                ThermalPlayer t = playerMap.get(event.getPlayer());
+                ThermalPlayer t = playerMap.get(event.getPlayer().getDisplayName());
                 t.hydrate(ThermalConfig.water_bottle_hydration);
                 event.getPlayer().sendMessage(t.hydrationBar());
             }
@@ -76,7 +144,7 @@ public class PlayerHandler implements Listener {
 
     @EventHandler
     public void playerWorking(BlockBreakEvent event) {
-        ThermalPlayer t = getThermalPlayer(event.getPlayer());
+        ThermalPlayer t = getThermalPlayer(event.getPlayer().getDisplayName());
         t.work(event.getBlock().getType().getHardness());
     }
 
@@ -90,13 +158,12 @@ public class PlayerHandler implements Listener {
 
 
         // 1.  Get Thermal Player
-        ThermalPlayer t = getThermalPlayer(p);
+        ThermalPlayer t = getThermalPlayer(p.getDisplayName());
         if (t == null) return;
 
         time = p.getWorld().getTime();
         boolean stormy = p.getWorld().hasStorm();
         BodilyCondition currentCondition = t.condition;
-
 
         // 2.  Player statuses
 
@@ -183,7 +250,6 @@ public class PlayerHandler implements Listener {
 
 
         //  6.  Bodily conditions
-
         BodilyCondition newBod = t.updateBodilyCondition();
         if(!currentCondition.equals(newBod)&&newBod.severity>1) {
             if (currentCondition.severity < newBod.severity) {

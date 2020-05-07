@@ -15,7 +15,7 @@ public class ThermalPlayer extends ThermalCreature {
 
     public static final double idealTemp = (ThermalConfig.comfort_min_C+ThermalConfig.comfort_max_C)/2;
 
-    public final Player player;
+    public Player player;
     public boolean debugging = false;
 
     // Body state
@@ -35,10 +35,19 @@ public class ThermalPlayer extends ThermalCreature {
     private boolean sweating = false;
 
     public ThermalPlayer(Player p) {
-        personalTemp_degrees_C = idealTemp; // Healthy temp in Celsius
-        wetness = 0;
-        hydration = ThermalConfig.max_hydration;
-        player = p;
+        this.player=p;
+        this.personalTemp_degrees_C=idealTemp;
+        this.hydration=ThermalConfig.max_hydration;
+        this.wetness=0;
+        updateBodilyCondition();
+        updatePlace();
+    }
+
+    public ThermalPlayer(Player p, double personalTemp, int wetness, int hydration) {
+        this.player = p;
+        this.personalTemp_degrees_C = personalTemp;
+        this.wetness = wetness;
+        this.hydration = hydration;
         updateBodilyCondition();
         updatePlace();
     }
@@ -61,6 +70,8 @@ public class ThermalPlayer extends ThermalCreature {
         return personalTemp_degrees_C;
     }
 
+    public int getHydration() { return hydration; }
+
     public boolean expose(double degree, Temperature impact) {
         double change;
         if(impact.equals(HOT)) change = degree*ThermalConfig.hot_temp_per_tick;
@@ -82,7 +93,7 @@ public class ThermalPlayer extends ThermalCreature {
         else if(personalTemp_degrees_C>ThermalConfig.hypothermia_degrees_C) target = BodilyCondition.UNCOMFORTABLY_COLD;
         else if(personalTemp_degrees_C>=ThermalConfig.severe_hypothermia_degrees_C) target = BodilyCondition.HYPOTHERMIA;
         else target=BodilyCondition.SEVERE_HYPOTHERMIA;
-        condition=target;
+        this.condition=target;
         return target;
     }
 

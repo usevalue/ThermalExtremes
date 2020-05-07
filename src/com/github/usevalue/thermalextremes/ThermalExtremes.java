@@ -31,7 +31,7 @@ public class ThermalExtremes extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
+        playerHandler.saveFile();
     }
 
     public static void debug(String m) {

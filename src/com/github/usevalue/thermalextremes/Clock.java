@@ -27,6 +27,7 @@ public class Clock extends BukkitRunnable {
     public void loadClockConfigs() {
         randomWeather = ThermalConfig.random_weather;
     }
+    private int saveTimer = 0;
 
     @Override
     public void run() {
@@ -75,6 +76,10 @@ public class Clock extends BukkitRunnable {
         // Check player thermal situations
         ThermalExtremes.playerHandler.updatePlayers(temp);
 
+        if(saveTimer<90) saveTimer++;
+        else {
+            ThermalExtremes.playerHandler.saveFile();
+        }
     }
 
     public boolean beginRandomWeather() {

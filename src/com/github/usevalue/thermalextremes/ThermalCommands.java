@@ -29,14 +29,13 @@ public class ThermalCommands implements CommandExecutor {
                 if (sender instanceof ConsoleCommandSender) {
                     sender.sendMessage("You need to supply the name of an online player to use this command from the console.");
                     return false;
-                } else t = ThermalExtremes.playerHandler.getThermalPlayer((Player) sender);
+                } else t = ThermalExtremes.playerHandler.getThermalPlayer(((Player) sender).getDisplayName());
             } else if (args.length == 1) {
                 if(!sender.hasPermission("thermalextremes.other")) {
                     sender.sendMessage("Sorry, you don't have permission to get other players' stats!");
                     return true;
                 }
-                Player p = ThermalExtremes.plugin.getServer().getPlayer(args[0]);
-                t = ThermalExtremes.playerHandler.getThermalPlayer(p);
+                t = ThermalExtremes.playerHandler.getThermalPlayer(args[0]);
             } else return false;
             bodyInfo(sender, t);
             return true;
@@ -60,9 +59,9 @@ public class ThermalCommands implements CommandExecutor {
                     return true;
                 case "list":
                     sender.sendMessage("Currently tracking the following players:");
-                    for (Player p : ThermalExtremes.playerHandler.getThermalPlayers().keySet()) {
-                        sender.sendMessage(p.getDisplayName() + " has a body temperature of "
-                                + ThermalExtremes.playerHandler.getThermalPlayer(p).getTemp() + "°C.");
+                    for (String name : ThermalExtremes.playerHandler.getThermalPlayers().keySet()) {
+                        sender.sendMessage(name + " has a body temperature of "
+                                + ThermalExtremes.playerHandler.getThermalPlayer(name).getTemp() + "°C.");
                     }
                     return true;
                 case "random":
@@ -77,8 +76,8 @@ public class ThermalCommands implements CommandExecutor {
                         sender.sendMessage("Toggled console debug mode.");
                     }
                     else {
-                        ThermalExtremes.playerHandler.getThermalPlayer((Player) sender).debugging = !ThermalExtremes.playerHandler.getThermalPlayer((Player) sender).debugging;
-                        sender.sendMessage("Player debug mode: "+ThermalExtremes.playerHandler.getThermalPlayer((Player)sender).debugging);
+                        ThermalExtremes.playerHandler.getThermalPlayer(((Player) sender).getDisplayName()).debugging = !ThermalExtremes.playerHandler.getThermalPlayer(((Player) sender).getDisplayName()).debugging;
+                        sender.sendMessage("Player debug mode: "+ThermalExtremes.playerHandler.getThermalPlayer(((Player) sender).getDisplayName()).debugging);
                     }
                     return true;
                 case "heatwave":
