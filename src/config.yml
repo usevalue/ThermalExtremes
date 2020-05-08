@@ -5,18 +5,18 @@ clock_interval: 20
 
 # World climate settings
 random_weather: true # Can be changed during runtime
-stability: 20000
+stability: 80000
 sky_light_sunny: 12
-block_light_heated: 10
+block_light_heated: 9
 
 # Player settings
 base_bodily_regulation: 0.03
-heating_from_work: 0.03
+heating_from_work: 0.02
 max_hydration: 600
-water_bottle_hydration: 120
+water_bottle_hydration: 180
 max_wetness: 400
 sweating:
-  hydration_cost: 5
+  hydration_cost: 15
   wetness_bonus: 20
 
 # Bodily Conditions
@@ -31,10 +31,10 @@ severe_hyperthermia_degrees_C: 40
 heatwave:
   base_degree_change_when_exposed: 0.03
   severity: 1000
-  minimum_duration: 3600
-  maximum_duration: 10000
+  minimum_duration: 6000
+  maximum_duration: 100000
 coldsnap:
   base_degree_change_when_exposed: 0.02
   severity: 500
-  minimum_duration: 2000
-  maximum_duration: 10000
+  minimum_duration: 6000
+  maximum_duration: 100000

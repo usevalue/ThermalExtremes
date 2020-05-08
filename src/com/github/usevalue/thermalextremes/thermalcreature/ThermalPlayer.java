@@ -107,11 +107,11 @@ public class ThermalPlayer extends ThermalCreature {
             regulation*=-1;
             if(condition.severity>0||sweating) if(!sweat(condition.severity)&& Clock.random.nextDouble()>0.9) player.damage(0.5);
             if(wetness>0) regulation*=1+((double)wetness/ThermalConfig.max_wetness);
+            if(!ventilatedPlace) regulation/=2;
         }
         else {  // Too cold
             if(wetness>0) regulation/=1+((double)wetness/ThermalConfig.max_wetness);
         }
-        if(!ventilatedPlace) regulation/=4;
         personalTemp_degrees_C+=regulation;
         if(debugging&&regulation!=0) player.sendMessage("Regulation changed temperature by "+regulation+"°C to "+personalTemp_degrees_C);
         if((regulation>0&&personalTemp_degrees_C>=idealTemp) ||(regulation<0&&personalTemp_degrees_C<=idealTemp)) { // Correct for overshoot
@@ -155,7 +155,7 @@ public class ThermalPlayer extends ThermalCreature {
 
     private boolean sweat(int amount) {
         if(!sweating) {
-            player.sendMessage("You've broken out in a sweat.");
+            player.sendMessage("You've broken out in a sweat.  It'll cool you down, but remember to stay hydrated.");
             sweating=true;
         }
         if(hydration>=amount) {
@@ -182,19 +182,19 @@ public class ThermalPlayer extends ThermalCreature {
 
     public String getWetnessDescription() {
         String s;
-        double section = (double)ThermalConfig.max_wetness/5;
+        double section = (double)ThermalConfig.max_wetness/4;
         int level = (int) Math.ceil(wetness/section);
         switch(level) {
-            case 2:
+            case 1:
                 s = "damp";
                 break;
-            case 3:
+            case 2:
                 s = "wet";
                 break;
-            case 4:
+            case 3:
                 s = "drenched";
                 break;
-            case 5:
+            case 4:
                 s = "soaked";
                 break;
             default:

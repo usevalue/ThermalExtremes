@@ -1,5 +1,6 @@
 package com.github.usevalue.thermalextremes;
 
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -94,7 +95,7 @@ public class Clock extends BukkitRunnable {
         if(temp.equals(HOT)) return false;
         temp = HOT;
         duration=0;
-        plugin.getServer().broadcastMessage("An unbearable heatwave has begun.");
+        plugin.getServer().broadcastMessage("An unbearable heatwave has begun!  Keep an eye on your "+ ChatColor.AQUA+"/body"+ChatColor.WHITE+", and if you get too warm find some shade or go for a swim.  And remember to stay hydrated!");
         return true;
     }
 

@@ -174,8 +174,8 @@ public class PlayerHandler implements Listener {
             t.wetness+=12;
         } else if(t.wetness>0) {
             double drying = 2;
-            if(t.warmedPlace) drying*=1+t.standingOn.getLightFromBlocks()-ThermalConfig.block_light_heated; //  Stand by the fire to dry your clothes.
-            if(temp.equals(COLD)) drying -=2;
+            if(t.warmedPlace) drying*=(t.standingOn.getLightFromBlocks()-ThermalConfig.block_light_heated)^2; //  Stand by the fire to dry your clothes.
+            if(temp.equals(COLD)) drying -=1;
             if(temp.equals(Temperature.HOT)&&t.sunlitPlace) drying+=2;
             t.wetness -= Math.floor(drying);
             if(t.wetness<=0) {
@@ -204,7 +204,7 @@ public class PlayerHandler implements Listener {
                         if(t.outsidePlace) exposure++;
                     }
                     else {
-                        because = "The night is so hot that it's difficult to stay cool.";
+                        because = "It's going to be a hot night tonight...";
                     }
                     exposure += radiantHeat;  // Radiant heat > 0
                 }
@@ -226,7 +226,7 @@ public class PlayerHandler implements Listener {
                     because = "Your wet clothes put you at severe risk during a cold snap.";
                 }
                 if(time>13000) {
-                    because = "of the freezing night";
+                    because = "You're pretty exposed here as the temperatures start to drop.";
                     exposure*=3;
                 }
                 break;
@@ -254,6 +254,7 @@ public class PlayerHandler implements Listener {
         if(!currentCondition.equals(newBod)&&newBod.severity>1) {
             if (currentCondition.severity < newBod.severity) {
                 p.sendMessage("Warning!  Because of " + temp.cause + ", you are now " + t.condition.color + t.condition.effectName + ChatColor.WHITE + ".");
+                p.sendMessage("Try "+t.condition.remedy+"!");
             } else {
                 if(currentCondition.severity>0)
                 p.sendMessage(ChatColor.AQUA+"You're recovering somewhat.  " + t.condition.color + "You're " + t.condition.effectName + " now.");
@@ -261,7 +262,7 @@ public class PlayerHandler implements Listener {
             }
         }
 
-        if(t.condition.severity>1) {
+        if(t.condition.severity>2) {
             if(t.condition.risk.equals(COLD)) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 200, t.condition.severity-1));
             }
