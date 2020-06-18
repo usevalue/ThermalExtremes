@@ -20,3 +20,5 @@ permissions:
   thermalextremes.user:
     description: Use of /body command
     default: true
+
+softdepend: [GlobalWarming, WorldEdit]

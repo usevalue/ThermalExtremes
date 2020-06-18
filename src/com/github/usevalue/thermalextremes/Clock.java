@@ -1,10 +1,13 @@
 package com.github.usevalue.thermalextremes;
 
+import net.porillo.GlobalWarming;
+import net.porillo.engine.ClimateEngine;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Random;
+import java.util.logging.Level;
 
 import static com.github.usevalue.thermalextremes.Temperature.*;
 
@@ -12,6 +15,8 @@ public class Clock extends BukkitRunnable {
 
     public static Clock clock;
     public static Random random;
+    public static GlobalWarming globalWarming;
+    public static boolean usingGlobalWarming = true;
     private int duration;
     private Temperature temp = Temperature.NORMAL;
     private ThermalExtremes plugin = com.github.usevalue.thermalextremes.ThermalExtremes.plugin;
@@ -22,6 +27,11 @@ public class Clock extends BukkitRunnable {
         random = new Random();
         duration = 0;
         loadClockConfigs();
+        if(usingGlobalWarming)
+            globalWarming = (GlobalWarming) ThermalExtremes.plugin.getServer().getPluginManager().getPlugin("GlobalWarming");
+        if(globalWarming==null)
+            usingGlobalWarming = false;
+        else ThermalExtremes.logger.log(Level.INFO,"Hooked GlobalWarming");
         runTaskTimer(plugin, 5, ThermalConfig.interval);
     }
 
@@ -33,6 +43,11 @@ public class Clock extends BukkitRunnable {
     @Override
     public void run() {
         duration+=ThermalConfig.interval;
+        double globalIntensity = 0;
+        if(usingGlobalWarming) {
+            double curtemp=ClimateEngine.getInstance().getClimateEngine(plugin.getServer().getWorlds().get(0).getUID()).getTemperature();
+            globalIntensity = curtemp - 14;
+        }
 
         // Should the temperature change?
         if(randomWeather) {
@@ -42,7 +57,7 @@ public class Clock extends BukkitRunnable {
                 case NORMAL:
                     chance = duration / ThermalConfig.stability;
                     ThermalExtremes.debug("Global temperatures are normal.  Current chance of thermal event is " + chance + "%.  The dice roll is " + diceRoll);
-                    if (chance > diceRoll) beginRandomWeather();
+                    if (chance > diceRoll) beginRandomWeather(globalIntensity);
                     break;
                 case HOT:
                     if(ThermalConfig.heatwave_min_duration>0 && duration < ThermalConfig.heatwave_min_duration) {
@@ -83,8 +98,8 @@ public class Clock extends BukkitRunnable {
         }
     }
 
-    public boolean beginRandomWeather() {
-        boolean coinFlip = (random.nextDouble() >= 0.5);
+    public boolean beginRandomWeather(double intensity) {
+        boolean coinFlip = (random.nextDouble() <= (0.5+intensity/10));
         if (coinFlip)
             return beginHeatwave();
         else
