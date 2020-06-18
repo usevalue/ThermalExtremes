@@ -3,7 +3,16 @@ package com.github.usevalue.thermalextremes;
 import com.github.usevalue.thermalextremes.thermalcreature.BodilyCondition;
 import com.github.usevalue.thermalextremes.thermalcreature.ThermalPlayer;
 
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector2;
+import com.sk89q.worldedit.regions.CylinderRegion;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -15,12 +24,14 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.logging.Level;
 
 import static com.github.usevalue.thermalextremes.Temperature.COLD;
@@ -33,9 +44,17 @@ public class PlayerHandler implements Listener {
     private YamlConfiguration playerBase;
     private HashMap<String, ThermalPlayer> playerMap;
     private long time;
+    private WorldEditPlugin worldEdit;
+    private boolean usingWorldEdit = true;
 
     public PlayerHandler() {
 
+        if(usingWorldEdit) {
+            Plugin plug = ThermalExtremes.plugin.getServer().getPluginManager().getPlugin("WorldEdit");
+            if(plug instanceof WorldEditPlugin) worldEdit = (WorldEditPlugin) plug;
+        }
+        if(worldEdit==null) usingWorldEdit = false;
+        ThermalExtremes.logger.log(Level.INFO, "Is there worldedit: "+usingWorldEdit);
         try {
             playerBase = new YamlConfiguration();
             if (playersFile.exists()) {
@@ -196,7 +215,7 @@ public class PlayerHandler implements Listener {
 
         switch (temp) {
             case HOT:
-                double radiantHeat = 1;
+                double radiantHeat = getRadiantHeat(p.getLocation());
                 if (t.sunlitPlace) {
                     if(time<11000) {
                         because = "You are exposed to the sun's blazing wrath!";
@@ -275,6 +294,22 @@ public class PlayerHandler implements Listener {
         if(p.getHealth()>0) t.regulate();
 
 
+    }
+
+    private double getRadiantHeat(Location l) {
+        BlockVector3 middle = BukkitAdapter.asBlockVector(l);
+        BukkitWorld world = new BukkitWorld(l.getWorld());
+        Vector2 radius = Vector2.UNIT_X.multiply(10);
+        CylinderRegion region = new CylinderRegion(world, middle, radius, l.getBlockY()-2, l.getBlockY()+2);
+        int x = 0;
+        for(Iterator i = region.iterator(); i.hasNext();) {
+            x++;
+            BlockVector3 blv = (BlockVector3) i.next();
+            Block block = l.getWorld().getBlockAt(blv.getBlockX(),blv.getBlockY(),blv.getBlockZ());
+            ThermalExtremes.logger.log(Level.INFO, x+": "+block.getType().toString());
+        }
+        ThermalExtremes.logger.log(Level.INFO, "Contents "+x+", volume "+region.getVolume());
+        return 0;
     }
 
 }
